@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.GrowTracker" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="android:colorPrimary">@color/grow_green</item>
+        <item name="android:colorPrimaryDark">@color/grow_green_variant</item>
+        <item name="android:colorAccent">@color/grow_green</item>
+        <item name="android:statusBarColor">@color/grow_green</item>
+    </style>
+
+    <!-- Splash Screen Theme mit custom_logo.png - 5 Sekunden Anzeige -->
+    <style name="Theme.GrowTracker.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+</resources>

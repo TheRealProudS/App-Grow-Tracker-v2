@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">GrowTracker</string>
+    
+    <!-- Navigation -->
+    <string name="navigation_overview">Übersicht</string>
+    <string name="navigation_grow">Grow</string>
+    <string name="navigation_settings">Einstellungen</string>
+</resources>

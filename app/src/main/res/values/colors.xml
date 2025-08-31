@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="grow_green">#4CAF50</color>
+    <color name="grow_green_variant">#388E3C</color>
+    <color name="grow_light">#C8E6C9</color>
+    <color name="grow_dark">#1B5E20</color>
+    
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- App Icon Vordergrund: Verwende custom_logo als PNG -->
+    <group android:scaleX="0.6"
+           android:scaleY="0.6"
+           android:translateX="21.6"
+           android:translateY="21.6">
+        <!-- Platzhalter - wird durch custom_logo.png überschrieben -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M30,30h48v48h-48z"/>
+    </group>
+</vector>
