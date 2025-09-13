@@ -157,13 +157,17 @@ fun GrowTrackerApp(
         ) {
             composable(TopLevelDestination.OVERVIEW.route) {
                 OverviewScreen(
-                    languageManager = languageManager
+                    languageManager = languageManager,
+                    onOpenGrowGuide = { navController.navigate("growguide") }
                 )
+            }
+            composable("growguide") {
+                GrowGuideScreen(languageManager = languageManager, onNavigateBack = { navController.popBackStack() })
             }
             composable(TopLevelDestination.GROW.route) {
                 GrowScreenV2(languageManager = languageManager, snackbarHostState = snackbarHostState, onOpenGrowbox = { id ->
                     navController.navigate("grow/plant/$id")
-                })
+                }, onOpenGrowGuide = { navController.navigate("growguide") })
             }
             composable("grow/plant/{plantId}") { backStackEntry ->
                 val plantId = backStackEntry.arguments?.getString("plantId") ?: return@composable

@@ -94,11 +94,18 @@ fun GrowboxDetailScreen(
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             plant.thcContent.takeIf { it.isNotBlank() }?.let { Text("THC: $it%", style = MaterialTheme.typography.labelSmall) }
                                             plant.cbdContent.takeIf { it.isNotBlank() }?.let { Text("CBD: $it%", style = MaterialTheme.typography.labelSmall) }
-                                            plant.germinationDate?.let {
-                                                val dateStr = runCatching {
-                                                    java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-                                                }.getOrNull()?.let { d -> java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy").format(d) }
-                                                if (dateStr != null) Text("Keimung: $dateStr", style = MaterialTheme.typography.labelSmall)
+
+                                            // Keimtag: days since germinationDate if present, otherwise since plantingDate
+                                            val germBase = plant.germinationDate ?: plant.plantingDate.takeIf { it > 0L }
+                                            germBase?.let {
+                                                val days = ((System.currentTimeMillis() - it) / (24L * 60 * 60 * 1000)).toInt()
+                                                Text("Keimtag: $days", style = MaterialTheme.typography.labelSmall)
+                                            }
+
+                                            // Blütetag: days since floweringStartDate if present
+                                            plant.floweringStartDate?.let {
+                                                val bloomDays = ((System.currentTimeMillis() - it) / (24L * 60 * 60 * 1000)).toInt()
+                                                Text("Blütetag: $bloomDays", style = MaterialTheme.typography.labelSmall)
                                             }
                                         }
                                     }
@@ -147,7 +154,7 @@ fun GrowboxDetailScreen(
 
 @Composable
 private fun SpeedDialIcon(type: EntryType, label: String, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
             FloatingActionButton(onClick = onClick, modifier = Modifier.size(40.dp), containerColor = MaterialTheme.colorScheme.secondaryContainer) {
             Icon(imageVector = Icons.Filled.Add, contentDescription = label, modifier = Modifier.size(20.dp))
         }

@@ -95,18 +95,13 @@ fun StatisticsScreen(
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.fillMaxSize().padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(growboxes) { growbox ->
-                    GrowboxStatisticsCard(
-                        growbox = growbox,
-                        languageManager = languageManager
-                    )
+                    GrowboxStatisticsCard(growbox = growbox, languageManager = languageManager)
                 }
-                
+
                 // Overall statistics
                 item {
                     OverallStatisticsCard(
@@ -127,13 +122,12 @@ fun GrowboxStatisticsCard(
     val waterStats = calculateWaterConsumption(growbox)
     val fertilizerStats = calculateFertilizerConsumption(growbox)
     val powerStats = calculatePowerConsumption(growbox)
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        )
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -146,79 +140,64 @@ fun GrowboxStatisticsCard(
             ) {
                 Text(
                     text = growbox.name,
-                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                
+
                 Surface(
                     modifier = Modifier.clip(RoundedCornerShape(20.dp)),
-                    color = if (growbox.isActive) 
-                        MaterialTheme.colorScheme.primaryContainer 
-                    else 
-                        MaterialTheme.colorScheme.errorContainer
+                    color = if (growbox.isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.errorContainer
                 ) {
                     Text(
                         text = if (growbox.isActive) "Aktiv" else "Inaktiv",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (growbox.isActive) 
-                            MaterialTheme.colorScheme.onPrimaryContainer 
-                        else 
+                        color = if (growbox.isActive)
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        else
                             MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(20.dp))
-            
-            // Statistics Grid
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatisticCard(
-                        title = getString(Strings.statistics_water_consumption, languageManager),
-                        value = "${waterStats.roundToInt()} L",
-                        icon = Icons.Filled.Water,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                        StatisticCard(
-                        title = "Dünger",
-                        value = "${fertilizerStats.roundToInt()} ml",
-                        icon = Icons.Filled.Science,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatisticCard(
-                        title = getString(Strings.statistics_power_consumption, languageManager),
-                        value = "${String.format("%.1f", powerStats.totalKwh)} kWh",
-                        icon = Icons.Filled.ElectricalServices,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    StatisticCard(
-                        title = getString(Strings.statistics_total_cost, languageManager),
-                        value = "${String.format("%.2f", powerStats.totalCost)} €",
-                        icon = Icons.Filled.Euro,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatisticCard(
+                    title = getString(Strings.statistics_water_consumption, languageManager),
+                    value = "${waterStats.roundToInt()} L",
+                    icon = Icons.Filled.Water,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+
+                StatisticCard(
+                    title = "Dünger",
+                    value = "${fertilizerStats.roundToInt()} ml",
+                    icon = Icons.Filled.Science,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.weight(1f)
+                )
+
+                StatisticCard(
+                    title = getString(Strings.statistics_power_consumption, languageManager),
+                    value = "${String.format("%.1f", powerStats.totalKwh)} kWh",
+                    icon = Icons.Filled.ElectricalServices,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.weight(1f)
+                )
+
+                StatisticCard(
+                    title = getString(Strings.statistics_total_cost, languageManager),
+                    value = "${String.format("%.2f", powerStats.totalCost)} €",
+                    icon = Icons.Filled.Euro,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f)
+                )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Power Settings Info
             PowerSettingsInfo(
                 growbox = growbox,

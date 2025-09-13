@@ -1,0 +1,48 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/czenk/.gradle/wrapper/dists/gradle-8.10.2-all/7iv73wktx1xtkvlq19urqw1wm/gradle-8.10.2/lib/native-platform-0.22-milestone-26.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:clean
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugBuildConfig
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+
+> Task :app:compileDebugKotlin
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/drying/DryingScreen.kt:70:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDetailScreen.kt:83:56 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDetailScreen.kt:166:60 'val Icons.Filled.EventNote: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.EventNote.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDetailScreen.kt:296:13 'fun LinearProgressIndicator(progress: Float, modifier: Modifier = ..., color: Color = ..., trackColor: Color = ..., strokeCap: StrokeCap = ...): Unit' is deprecated. Use the overload that takes `progress` as a lambda.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDetailScreen.kt:368:57 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDetailScreen.kt:383:57 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDetailScreen.kt:535:72 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDetailScreen.kt:539:50 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDialogs.kt:534:61 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationDialogs.kt:545:61 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/fermentation/FermentationScreen.kt:63:60 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/grow/GrowboxDetailScreen.kt:52:88 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/grow/PlantDetailScreen.kt:221:86 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/grow/PlantDetailScreen.kt:225:85 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/growguide/GrowGuideScreen.kt:133:52 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/growguide/GrowGuideScreen.kt:181:41 'val Icons.Filled.TrendingUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.TrendingUp.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/growguide/GrowGuideScreen.kt:196:41 'val Icons.Filled.Help: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Help.
+w: file:///C:/Users/czenk/Desktop/App-Grow-Tracker/app/src/main/java/com/growtracker/app/ui/statistics/StatisticsScreen.kt:59:52 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+
+BUILD SUCCESSFUL in 17s
+16 actionable tasks: 16 executed

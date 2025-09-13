@@ -11,7 +11,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.Image
+import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
+import com.growtracker.app.ui.grow.GrowDataStore
+import com.growtracker.app.data.EntryType as DataEntryType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,8 +46,10 @@ data class OverviewItem(
 @Composable
 fun OverviewScreen(
     modifier: Modifier = Modifier,
-    languageManager: LanguageManager
+    languageManager: LanguageManager,
+    onOpenGrowGuide: () -> Unit = {}
 ) {
+    var showGallery by remember { mutableStateOf(false) }
     Box(
         modifier = modifier.fillMaxSize()
     ) {
@@ -77,9 +88,9 @@ fun OverviewScreen(
                     FeatureCard(
                     title = getString(Strings.overview_grow_guide, languageManager),
                     description = "Expertenwissen für erfolgreichen Cannabis-Anbau",
-                    icon = Icons.Filled.MenuBook,
+                        icon = Icons.Filled.MenuBook,
                     backgroundColor = Color(0xFF4CAF50),
-                    onClick = {},
+                    onClick = onOpenGrowGuide,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -91,17 +102,17 @@ fun OverviewScreen(
                         FeatureCard(
                         title = getString(Strings.overview_placeholder_1, languageManager),
                         description = "",
-                        icon = Icons.Filled.Analytics,
+                            icon = Icons.Filled.Analytics,
                         backgroundColor = Color(0xFF2196F3),
                         onClick = {},
                         modifier = Modifier.weight(1f),
                         isCompact = true
                     )
                     
-                    FeatureCard(
+                        FeatureCard(
                         title = "Trocknung",
                         description = "",
-                        icon = Icons.Filled.Air,
+                            icon = Icons.Filled.AcUnit,
                         backgroundColor = Color(0xFFFF9800),
                         onClick = {},
                         modifier = Modifier.weight(1f),
@@ -114,25 +125,74 @@ fun OverviewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    FeatureCard(
-                        title = "Labor & Tests",
-                        description = "",
-                        icon = Icons.Filled.Science,
-                        backgroundColor = Color(0xFF9C27B0),
-                        onClick = {},
-                        modifier = Modifier.weight(1f),
-                        isCompact = true
-                    )
+        FeatureCard(
+            title = "Galerie",
+            description = "",
+        icon = Icons.Filled.PhotoLibrary,
+            backgroundColor = Color(0xFF9C27B0),
+            onClick = { showGallery = true },
+            modifier = Modifier.weight(1f),
+            isCompact = true
+            )
                     
-                    FeatureCard(
+            FeatureCard(
                         title = "Fermentierung",
                         description = "",
-                        icon = Icons.Filled.LocalBar,
+                icon = Icons.Filled.LocalBar,
                         backgroundColor = Color(0xFF795548),
                         onClick = {},
                         modifier = Modifier.weight(1f),
                         isCompact = true
                     )
+                }
+            }
+        }
+    }
+
+    if (showGallery) {
+        GalleryDialog(onClose = { showGallery = false })
+    }
+}
+
+@Composable
+fun GalleryDialog(onClose: () -> Unit) {
+    // collect all photos from GrowDataStore
+    val plants = remember { GrowDataStore.plants }
+    val photos = remember(plants) { plants.flatMap { it.photos } }
+    var fullScreenPath by remember { mutableStateOf<String?>(null) }
+
+    Dialog(onDismissRequest = onClose) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Text("Galerie", style = MaterialTheme.typography.titleLarge)
+                    IconButton(onClick = onClose) { Icon(imageVector = Icons.Filled.Close, contentDescription = "Schließen") }
+                }
+
+                if (photos.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Keine Bilder vorhanden") }
+                } else {
+                    LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(4.dp)) {
+                        items(photos) { p ->
+                            val bmp = runCatching { android.graphics.BitmapFactory.decodeFile(p.uri) }.getOrNull()
+                            if (bmp != null) {
+                                Image(bitmap = bmp.asImageBitmap(), contentDescription = p.description, modifier = Modifier.size(120.dp).padding(4.dp).clickable { fullScreenPath = p.uri }, contentScale = ContentScale.Crop)
+                            } else {
+                                Icon(imageVector = Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(120.dp).padding(8.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (fullScreenPath != null) {
+        Dialog(onDismissRequest = { fullScreenPath = null }) {
+            val bmp = runCatching { android.graphics.BitmapFactory.decodeFile(fullScreenPath) }.getOrNull()
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (bmp != null) Image(bitmap = bmp.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit) else Text("Bild nicht verfügbar")
                 }
             }
         }

@@ -67,7 +67,7 @@ fun FermentationScreen(
                 },
                 actions = {
                     IconButton(onClick = { /* TODO: camera action */ }) {
-                        Icon(imageVector = Icons.Filled.PhotoCamera, contentDescription = "Foto")
+                        Icon(imageVector = Icons.Filled.CameraAlt, contentDescription = "Foto")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -103,14 +103,15 @@ fun FermentationScreen(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.size(120.dp)
                         ) {
-                                    Icon(
-                                                imageVector = Icons.Filled.LocalBar,
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(60.dp)
-                                                    .padding(30.dp),
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
+                            // Placeholder camera icon
+                            Icon(
+                                imageVector = Icons.Filled.CameraAlt,
+                                contentDescription = "Foto",
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .padding(30.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
@@ -538,7 +539,7 @@ fun FermentationPlantDetailDialog(
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                             Icon(
-                                                imageVector = Icons.Filled.PhotoCamera,
+                                                imageVector = Icons.Filled.CameraAlt,
                                                 contentDescription = photo.description,
                                                 modifier = Modifier.size(32.dp),
                                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
@@ -591,8 +592,8 @@ fun FermentationPlantDetailDialog(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Icon(imageVector = Icons.Filled.PhotoCamera, contentDescription = null)
-                        Icon(imageVector = Icons.Filled.PhotoCamera, contentDescription = null)
+                        Icon(imageVector = Icons.Filled.CameraAlt, contentDescription = null)
+                        Icon(imageVector = Icons.Filled.CameraAlt, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Foto hinzufügen")
                     }

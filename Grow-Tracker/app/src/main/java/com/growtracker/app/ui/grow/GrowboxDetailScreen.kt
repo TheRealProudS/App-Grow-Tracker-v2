@@ -118,7 +118,6 @@ fun GrowboxDetailScreen(
             }
             val newPlants = (1..count).map {
                 Plant(
-                    name = plantName,
                     manufacturer = manufacturer,
                     strain = strain,
                     preferredFertilizerManufacturer = fertilizer.ifBlank { null },
@@ -147,7 +146,7 @@ fun GrowboxDetailScreen(
 
 @Composable
 private fun SpeedDialIcon(type: EntryType, label: String, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
             FloatingActionButton(onClick = onClick, modifier = Modifier.size(40.dp), containerColor = MaterialTheme.colorScheme.secondaryContainer) {
             Icon(imageVector = Icons.Filled.Add, contentDescription = label, modifier = Modifier.size(20.dp))
         }

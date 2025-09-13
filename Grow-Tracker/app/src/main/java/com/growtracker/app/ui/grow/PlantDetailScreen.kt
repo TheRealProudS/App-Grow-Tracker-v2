@@ -203,11 +203,11 @@ private fun SimpleCalendarView(
 ) {
     val base = Calendar.getInstance().apply { add(Calendar.WEEK_OF_YEAR, weekOffset); set(Calendar.DAY_OF_WEEK, Calendar.MONDAY); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        IconButton(onClick = { onWeekChange(-1) }) { Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Vorwoche") }
+    IconButton(onClick = { onWeekChange(-1) }) { Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Vorwoche") }
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = "Woche", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = { onWeekChange(1) }) { Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Nächste Woche") }
+    IconButton(onClick = { onWeekChange(1) }) { Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Nächste Woche") }
     }
 
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

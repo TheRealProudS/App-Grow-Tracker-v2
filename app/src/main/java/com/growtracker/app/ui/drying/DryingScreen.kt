@@ -101,7 +101,7 @@ fun DryingScreen(
                             modifier = Modifier.size(120.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Air,
+                                imageVector = Icons.Filled.AcUnit,
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(60.dp)
@@ -168,7 +168,6 @@ fun DryingPlantCard(
     
     // Calculate estimated date for curing (fermentation)
     val estimatedCuringStartDate = dryingStartDate + (optimalDryingDays * 24 * 60 * 60 * 1000)
-    
     // Format dates
     val harvestDateFormatted = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(harvestDate)
     val curingDateFormatted = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(estimatedCuringStartDate)
@@ -222,7 +221,7 @@ fun DryingPlantCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Air,
+                            imageVector = Icons.Filled.AcUnit,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
                             tint = when {
@@ -453,11 +452,7 @@ fun DryingPlantDetailDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true
-        )
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Card(
             modifier = Modifier
@@ -982,10 +977,10 @@ fun FermentationMethodCard(
             
             Icon(
                 imageVector = when (method) {
-                    FermentationMethod.MASON_JAR -> Icons.Filled.LocalDrink
-                    FermentationMethod.HUMIDOR -> Icons.Filled.Inventory2
+                    FermentationMethod.MASON_JAR -> Icons.Filled.LocalBar
+                    FermentationMethod.HUMIDOR -> Icons.Filled.Inventory
                     FermentationMethod.TERPLOC_BAG -> Icons.Filled.LocalMall
-                    FermentationMethod.VACUUM_CONTAINER -> Icons.Filled.Vaccines
+                    FermentationMethod.VACUUM_CONTAINER -> Icons.Filled.LocalHospital
                 },
                 contentDescription = null,
                 tint = if (isSelected) 

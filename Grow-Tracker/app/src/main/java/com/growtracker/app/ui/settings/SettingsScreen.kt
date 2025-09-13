@@ -336,14 +336,14 @@ fun LanguageSelectionDialog(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Language,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .padding(12.dp)
-                        )
+                Icon(
+                    imageVector = Icons.Filled.Language,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                    .size(24.dp)
+                    .padding(12.dp)
+                )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(

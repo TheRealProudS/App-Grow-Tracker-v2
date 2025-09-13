@@ -79,12 +79,18 @@ fun FermentationDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
+                                    Icon(
+                                    imageVector = Icons.Filled.ArrowBack,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                                imageVector = Icons.Filled.AcUnit,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                     }
                 },
                 actions = {
@@ -213,9 +219,9 @@ fun FermentationDetailScreen(
     }
 }
 
-// Helper composables and functions are implemented in FermentationScreen.kt to avoid duplication.
-
 }
+
+// Helper composables and functions are implemented in FermentationScreen.kt to avoid duplication.
 
 @Composable
 fun FermentationStatusCard(
@@ -250,7 +256,7 @@ fun FermentationStatusCard(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Filled.Air,
+                            imageVector = Icons.Filled.AcUnit,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.primary
@@ -388,7 +394,7 @@ fun WeeklyCalendarCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Air,
+                        imageVector = Icons.Filled.AcUnit,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -529,15 +535,15 @@ fun FermentationEntryCard(entry: FermentationEntry) {
                     else -> Color.Gray
                 }
             ) {
-                    Icon(
-                    imageVector = when (entry.type) {
-                            FermentationEntryType.VENTILATION -> Icons.Filled.Air
-                            FermentationEntryType.NOTE -> Icons.Filled.Note
-                            FermentationEntryType.TASK -> Icons.Filled.Task
-                            FermentationEntryType.HUMIDITY_CHECK -> Icons.Filled.WaterDrop
-                            FermentationEntryType.TEMPERATURE_CHECK -> Icons.Filled.Thermostat
-                            else -> Icons.Filled.Help
-                    },
+            Icon(
+            imageVector = when (entry.type) {
+        FermentationEntryType.VENTILATION -> Icons.Filled.AcUnit
+                FermentationEntryType.NOTE -> Icons.Filled.Note
+                FermentationEntryType.TASK -> Icons.Filled.Task
+                FermentationEntryType.HUMIDITY_CHECK -> Icons.Filled.WaterDrop
+                FermentationEntryType.TEMPERATURE_CHECK -> Icons.Filled.Thermostat
+                else -> Icons.Filled.Help
+            },
                     contentDescription = null,
                     modifier = Modifier
                         .size(40.dp)
@@ -615,6 +621,12 @@ fun FermentationEntryCard(entry: FermentationEntry) {
                             }
                         }
                     }
+                    Icon(
+                        imageVector = Icons.Filled.AcUnit,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -667,3 +679,4 @@ fun getOptimalVentilationSchedule(method: FermentationMethod, currentDay: Int): 
         else -> emptyList()
     }
 }
+

@@ -27,18 +27,17 @@ fun formatDate(timestamp: Long): String {
 
 fun getEntryTypeIcon(type: EntryType): androidx.compose.ui.graphics.vector.ImageVector {
     return when (type) {
-    EntryType.HEIGHT -> Icons.Filled.Height
-    EntryType.WATERING -> Icons.Filled.WaterDrop
-    EntryType.FERTILIZING -> Icons.Filled.Eco
-    EntryType.PHOTO -> Icons.Filled.Camera
-    EntryType.TEMPERATURE -> Icons.Filled.Thermostat
-    EntryType.HUMIDITY -> Icons.Filled.Water
-    EntryType.LIGHT -> Icons.Filled.LightMode
-    EntryType.TOPPING -> Icons.Filled.ContentCut
-    EntryType.LOLLIPOPPING -> Icons.Filled.Grass
-    EntryType.LST -> Icons.Filled.Transform
-    EntryType.TASK -> Icons.Filled.Task
-    EntryType.NOTE -> Icons.Filled.Note
+    EntryType.HEIGHT -> androidx.compose.material.icons.Icons.Filled.Height
+    EntryType.PHOTO -> androidx.compose.material.icons.Icons.Filled.Camera
+    EntryType.TEMPERATURE -> androidx.compose.material.icons.Icons.Filled.Thermostat
+    EntryType.LIGHT -> androidx.compose.material.icons.Icons.Filled.LightMode
+    EntryType.TOPPING -> androidx.compose.material.icons.Icons.Filled.ContentCut
+    EntryType.LOLLIPOPPING -> androidx.compose.material.icons.Icons.Filled.Grass
+    EntryType.LST -> androidx.compose.material.icons.Icons.Filled.Transform
+    EntryType.TASK -> androidx.compose.material.icons.Icons.Filled.Task
+    EntryType.WATERING -> androidx.compose.material.icons.Icons.Filled.WaterDrop
+    EntryType.HUMIDITY -> androidx.compose.material.icons.Icons.Filled.Water
+    EntryType.NOTE -> androidx.compose.material.icons.Icons.Filled.Note
     }
 }
 

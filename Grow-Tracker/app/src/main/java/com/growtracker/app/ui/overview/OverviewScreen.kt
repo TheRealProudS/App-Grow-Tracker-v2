@@ -37,7 +37,8 @@ data class OverviewItem(
 @Composable
 fun OverviewScreen(
     modifier: Modifier = Modifier,
-    languageManager: LanguageManager
+    languageManager: LanguageManager,
+    onOpenGrowGuide: () -> Unit
 ) {
     Box(
         modifier = modifier.fillMaxSize()
@@ -79,7 +80,7 @@ fun OverviewScreen(
                     description = "Expertenwissen für erfolgreichen Cannabis-Anbau",
                     icon = Icons.Filled.MenuBook,
                     backgroundColor = Color(0xFF4CAF50),
-                    onClick = {},
+                    onClick = onOpenGrowGuide,
                     modifier = Modifier.fillMaxWidth()
                 )
                 

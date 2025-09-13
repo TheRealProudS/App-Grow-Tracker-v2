@@ -1,14 +1,20 @@
 
 
 @file:Suppress("DEPRECATION")
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package com.growtracker.app.ui.grow
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.ExperimentalFoundationApi
 // use fully-qualified material icon references to avoid receiver/import mismatches
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -36,12 +42,13 @@ import com.growtracker.app.data.Plant
 import com.growtracker.app.data.PlantType
 import com.growtracker.app.data.StrainRepository
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun GrowScreenV2(
     languageManager: LanguageManager,
     snackbarHostState: SnackbarHostState,
-    onOpenGrowbox: (String) -> Unit
+    onOpenGrowbox: (String) -> Unit,
+    onOpenGrowGuide: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val context = LocalContext.current
@@ -64,6 +71,14 @@ fun GrowScreenV2(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+            // Guide shortcut button (navigates to Grow Guide)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { onOpenGrowGuide() }) {
+                    Icon(imageVector = Icons.Filled.MenuBook, contentDescription = "Grow Guide")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Grow-Guide")
+                }
+            }
             // Simple sort selector for active tab
             if (selectedTab == 0) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -94,7 +109,14 @@ fun GrowScreenV2(
                     }
                     if (plants.isEmpty()) Text("Keine Pflanzen", modifier = Modifier.padding(16.dp))
                     else {
-                        LazyColumn { items(plants, key = { it.id }) { p -> PlantRow(p) { onOpenGrowbox(it) } } }
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 180.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(plants, key = { it.id }) { p -> PlantCard(plant = p, onClick = { onOpenGrowbox(it) }) }
+                        }
                     }
                 }
                 else -> {
@@ -105,13 +127,16 @@ fun GrowScreenV2(
             }
 
             if (showAdd) {
-                AddPlantDialog(onCancel = { showAdd = false }, onAdd = { plant ->
-                    val withId = if (plant.id.isBlank()) plant.copy(id = java.util.UUID.randomUUID().toString()) else plant
-                    GrowDataStore.addPlant(withId)
+                AddPlantDialog(onCancel = { showAdd = false }, onAdd = { count, plant ->
+                    // create `count` distinct plants (each with a new id)
+                    repeat(count.coerceAtLeast(1)) {
+                        val withId = if (plant.id.isBlank()) plant.copy(id = java.util.UUID.randomUUID().toString()) else plant.copy(id = java.util.UUID.randomUUID().toString())
+                        GrowDataStore.addPlant(withId)
+                    }
                     // don't clear growboxes here; persistence updated internal list
                     showAdd = false
                     // show a short snackbar via the top-level hostState so it's visible from both tabs
-                    coroutineScope.launch { snackbarHostState.showSnackbar("Pflanze hinzugefügt") }
+                    coroutineScope.launch { snackbarHostState.showSnackbar("${'$'}count Pflanzen hinzugefügt") }
                 })
             }
         }
@@ -127,21 +152,7 @@ private fun parseThcSortKey(s: String): Double {
         else cleaned.toDoubleOrNull() ?: 0.0
     } catch (_: Exception) { 0.0 }
 }
-
-// derive phase similarly to PlantDetailScreen's helper
-private fun derivePhase(plant: com.growtracker.app.data.Plant): String = when {
-    plant.germinationDate == null -> "Unbekannt"
-    plant.floweringStartDate != null && System.currentTimeMillis() >= plant.floweringStartDate -> "Blüte"
-    else -> {
-        val weeks = ((System.currentTimeMillis() - (plant.germinationDate ?: System.currentTimeMillis())) / (1000L * 60 * 60 * 24 * 7)).toInt()
-        when {
-            weeks < 1 -> "Keimung"
-            weeks < 3 -> "Sämling"
-            weeks < 6 -> "Wachstum"
-            else -> "Reif"
-        }
-    }
-}
+// PhasePill, deriveAgeWeeks and derivePhase are provided by PlantUiHelpers.kt
 
 // removed scaffold helper - using SnackbarHostState and coroutineScope directly
 
@@ -191,6 +202,13 @@ private fun PlantRow(plant: Plant, onClick: (String) -> Unit) {
                                 Text("CBD ${plant.cbdContent}", modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
                             }
                         }
+                        // Pot size chip similar to THC styling
+                        val potLabel = plant.customPotSize?.takeIf { it.isNotBlank() }?.let { if (it.trim().lowercase().endsWith("l")) it.trim() else "${it.trim()} L" }
+                        if (!potLabel.isNullOrBlank()) {
+                            Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.secondaryContainer) {
+                                Text("Topf $potLabel", modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            }
+                        }
                     }
                     
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -220,9 +238,96 @@ private fun PlantRow(plant: Plant, onClick: (String) -> Unit) {
     }
 }
 
+@Composable
+private fun PlantCard(plant: Plant, onClick: (String) -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 160.dp)
+            .clickable { onClick(plant.id) },
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // left image/letter
+                Surface(shape = RoundedCornerShape(10.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(64.dp)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        val avatar = plant.manufacturer.ifBlank { plant.name }.firstOrNull()?.uppercaseChar() ?: '?'
+                        Text(avatar.toString(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // Title shows name first, then manufacturer/strain in lighter style
+                    val titleText = plant.name.ifBlank { plant.manufacturer.ifBlank { "Unbenannt" } }
+                    Text(titleText, style = MaterialTheme.typography.titleMedium)
+                    // Avoid duplicating manufacturer/strain if already present in the title (e.g., "Manufacturer - Strain")
+                    val titleLower = titleText.lowercase()
+                    val secondaryParts = listOfNotNull(
+                        plant.manufacturer.takeIf { it.isNotBlank() },
+                        plant.strain.takeIf { it.isNotBlank() }
+                    ).filter { part -> part.lowercase() !in titleLower }
+                    val secondary = secondaryParts.joinToString(" • ")
+                    if (secondary.isNotBlank()) Text(secondary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // Badges row: THC, CBD, Pot size, and show phase chip when it's 'Sämling'
+                    // Wrap chips so they flow nicely on small screens
+                    val phase = derivePhase(plant)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (plant.thcContent.isNotBlank()) Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.secondaryContainer) { Text("THC ${plant.thcContent}", modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer) }
+                        if (plant.cbdContent.isNotBlank()) Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.tertiaryContainer) { Text("CBD ${plant.cbdContent}", modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer) }
+                        val potLabel2 = plant.customPotSize?.takeIf { it.isNotBlank() }?.let { if (it.trim().lowercase().endsWith("l")) it.trim() else "${it.trim()} L" }
+                        if (!potLabel2.isNullOrBlank()) Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.secondaryContainer) { Text("Topf $potLabel2", modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer) }
+                        if (phase == "Sämling") Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primaryContainer) {
+                            Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(imageVector = Icons.Filled.FilterVintage, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(phase, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                        }
+                        // Keimtag chip
+                        run {
+                            val keimBase = plant.germinationDate ?: plant.plantingDate
+                            if (keimBase > 0L) {
+                                val keimDays = ((System.currentTimeMillis() - keimBase) / (1000L * 60 * 60 * 24)).toInt()
+                                Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceVariant) {
+                                    Text("Keimtag $keimDays", modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        // Blütetag chip if flowering started
+                        plant.floweringStartDate?.let { fsd ->
+                            val bloomDays = ((System.currentTimeMillis() - fsd) / (1000L * 60 * 60 * 24)).toInt()
+                            Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceVariant) {
+                                Text("Blütetag $bloomDays", modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                }
+
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // compact bottom line with light info (pot size and blütetag chips are already shown above)
+            val parts = mutableListOf<String>()
+            plant.lightType?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
+            plant.lightWatt?.let { parts.add("${it}W") }
+            // Removed raw pot size and blütetag here to avoid duplication; both are shown as chips above
+            if (parts.isNotEmpty()) Text(parts.joinToString(" • "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Plant) -> Unit) {
+private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
+    var count by remember { mutableStateOf("1") }
+    val countInt = count.toIntOrNull() ?: 1
     var manufacturer by remember { mutableStateOf("") }
     var strain by remember { mutableStateOf("") }
     var thc by remember { mutableStateOf("") }
@@ -249,6 +354,7 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Plant) -> Unit) {
         title = { Text("Pflanze anlegen") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = count, onValueChange = { if (it.all(Char::isDigit) && it.isNotBlank()) count = it }, label = { Text("Anzahl") })
                 // Manufacturer dropdown (simple Box + DropdownMenu to work reliably inside AlertDialog)
                 Box {
                     OutlinedTextField(
@@ -260,7 +366,7 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Plant) -> Unit) {
                             .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { expandManufacturer = !expandManufacturer },
                         label = { Text("Hersteller") },
                         trailingIcon = {
-                            IconButton(onClick = { expandManufacturer = !expandManufacturer }) {
+                                IconButton(onClick = { expandManufacturer = !expandManufacturer }) {
                                 Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
                             }
                         }
@@ -357,8 +463,8 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Plant) -> Unit) {
                 val germEpoch = germinationEpoch
                 val defaultName = if (manufacturer.isNotBlank() && strain.isNotBlank()) "$manufacturer - $strain" else "Neue Pflanze"
                 val plant = Plant(id = "", name = defaultName, manufacturer = manufacturer, strain = strain, thcContent = thc, cbdContent = cbd, germinationDate = germEpoch)
-                onAdd(plant)
-            }) { Text("OK") }
+                onAdd(countInt.coerceAtLeast(1), plant)
+            }, enabled = countInt > 0) { Text("OK") }
         },
         dismissButton = { TextButton(onClick = onCancel) { Text("Abbrechen") } }
     )
