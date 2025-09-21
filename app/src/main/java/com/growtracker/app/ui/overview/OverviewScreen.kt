@@ -48,7 +48,8 @@ data class OverviewItem(
 fun OverviewScreen(
     modifier: Modifier = Modifier,
     languageManager: LanguageManager,
-    onOpenGrowGuide: () -> Unit = {}
+    onOpenGrowGuide: () -> Unit = {},
+    onOpenStatistics: () -> Unit = {}
 ) {
     var showGallery by remember { mutableStateOf(false) }
     Box(
@@ -105,7 +106,7 @@ fun OverviewScreen(
                         description = "",
                             icon = Icons.Filled.Analytics,
                         backgroundColor = Color(0xFF2196F3),
-                        onClick = {},
+                        onClick = onOpenStatistics,
                         modifier = Modifier.weight(1f),
                         isCompact = true
                     )
@@ -313,7 +314,7 @@ fun FeatureCard(
                     }
                     
                     Icon(
-                        imageVector = Icons.Filled.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "Öffnen",
                         modifier = Modifier.size(20.dp),
                         tint = Color.White.copy(alpha = 0.8f)

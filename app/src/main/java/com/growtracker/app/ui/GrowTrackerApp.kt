@@ -43,6 +43,7 @@ import com.growtracker.app.ui.grow.GrowScreenV2
 import com.growtracker.app.ui.grow.PlantDetailScreen
 import com.growtracker.app.ui.growguide.GrowGuideScreen
 import com.growtracker.app.ui.overview.OverviewScreen
+import com.growtracker.app.ui.statistics.PlantStatisticsScreen
 import com.growtracker.app.ui.settings.SettingsScreen
 import com.growtracker.app.ui.theme.ThemeManager
 import com.growtracker.app.ui.language.LanguageManager
@@ -159,7 +160,8 @@ fun GrowTrackerApp(
             composable(TopLevelDestination.OVERVIEW.route) {
                 OverviewScreen(
                     languageManager = languageManager,
-                    onOpenGrowGuide = { navController.navigate("growguide") }
+                    onOpenGrowGuide = { navController.navigate("growguide") },
+                    onOpenStatistics = { navController.navigate("plant-stats") }
                 )
             }
             composable(TopLevelDestination.GROW.route) {
@@ -169,6 +171,9 @@ fun GrowTrackerApp(
             }
             composable("growguide") {
                 GrowGuideScreen(languageManager = languageManager, onNavigateBack = { navController.popBackStack() })
+            }
+            composable("plant-stats") {
+                PlantStatisticsScreen(languageManager = languageManager, onNavigateBack = { navController.popBackStack() })
             }
             composable("grow/plant/{plantId}") { backStackEntry ->
                 val plantId = backStackEntry.arguments?.getString("plantId") ?: return@composable
