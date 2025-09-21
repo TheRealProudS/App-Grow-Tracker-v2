@@ -813,6 +813,7 @@ fun getFertilizerManufacturers(): List<FertilizerManufacturer> {
                 FertilizerProduct("Top-Max", "Zusätze", "", "Organischer Blütenbooster"),
                 FertilizerProduct("Bio-Heaven", "Zusätze", "", "Energiestimulator"),
                 FertilizerProduct("Root-Juice", "Zusätze", "", "Organischer Wurzelstimulator"),
+                FertilizerProduct("Acti-Vera", "Zusätze", "", "Aloe-Vera-basierter Pflanzenstärker"),
                 FertilizerProduct("Alg-A-Mic", "Zusätze", "", "Algenstimulator"),
                 FertilizerProduct("Cal-Mag", "Zusätze", "", "Calcium Magnesium organisch")
             )

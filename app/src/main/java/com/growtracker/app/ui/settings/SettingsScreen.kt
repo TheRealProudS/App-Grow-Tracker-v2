@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.growtracker.app.ui.theme.ThemeManager
 import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Language
@@ -124,6 +129,48 @@ fun SettingsScreen(
                     icon = Icons.Filled.Info,
                     onClick = { showSystemInfoDialog = true }
                 )
+            }
+
+            // Social / Support row (centered Discord icon)
+            item {
+                val ctx = LocalContext.current
+                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(onClick = {
+                            val webInvite = "https://discord.gg/yE2Es4gsUb"
+                            // First try to open the Discord app via package name (deep link). If not installed, fall back to browser.
+                            val discordIntent = ctx.packageManager.getLaunchIntentForPackage("com.discord")
+                            try {
+                                if (discordIntent != null) {
+                                    // Attempt to open app; if it accepts VIEW intents you could also use a deep link
+                                    ctx.startActivity(discordIntent)
+                                } else {
+                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(webInvite))
+                                    ctx.startActivity(browserIntent)
+                                }
+                            } catch (e: Exception) {
+                                try {
+                                    val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(webInvite))
+                                    ctx.startActivity(fallback)
+                                } catch (ex: Exception) {
+                                    Toast.makeText(ctx, "Kann Link nicht öffnen", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }, modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(Color.Transparent)) {
+                            Icon(
+                                painter = androidx.compose.ui.res.painterResource(id = com.growtracker.app.R.drawable.ic_discord),
+                                contentDescription = "Discord",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Join us on Discord", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
             }
         }
     }
@@ -294,12 +341,12 @@ fun SamsungSettingsItem(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             } else if (onClick != null) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowForward,
-                    contentDescription = "Öffnen",
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Öffnen",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
             }
         }
     }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.asImageBitmap
@@ -88,7 +89,7 @@ fun OverviewScreen(
                     FeatureCard(
                     title = getString(Strings.overview_grow_guide, languageManager),
                     description = "Expertenwissen für erfolgreichen Cannabis-Anbau",
-                        icon = Icons.Filled.MenuBook,
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
                     backgroundColor = Color(0xFF4CAF50),
                     onClick = onOpenGrowGuide,
                     modifier = Modifier.fillMaxWidth()
@@ -128,7 +129,7 @@ fun OverviewScreen(
         FeatureCard(
             title = "Galerie",
             description = "",
-        icon = Icons.Filled.PhotoLibrary,
+    icon = Icons.Filled.PhotoLibrary,
             backgroundColor = Color(0xFF9C27B0),
             onClick = { showGallery = true },
             modifier = Modifier.weight(1f),

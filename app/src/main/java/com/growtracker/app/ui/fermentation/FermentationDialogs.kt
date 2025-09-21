@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -247,7 +248,7 @@ fun SettingsOption(
             }
             
             Icon(
-                imageVector = Icons.Filled.ArrowForward,
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
@@ -531,7 +532,7 @@ fun AddFermentationEntryDialog(
                             cal.add(Calendar.DAY_OF_MONTH, -1)
                             entryDate = cal.timeInMillis
                         }) {
-                            Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "-1 Tag")
+                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "-1 Tag")
                         }
 
                         Text(text = dateFormat.format(Date(entryDate)), style = MaterialTheme.typography.titleSmall)
@@ -542,7 +543,7 @@ fun AddFermentationEntryDialog(
                             val newTime = cal.timeInMillis
                             if (newTime <= maxAllowed) entryDate = newTime
                         }) {
-                            Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "+1 Tag")
+                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "+1 Tag")
                         }
                     }
 

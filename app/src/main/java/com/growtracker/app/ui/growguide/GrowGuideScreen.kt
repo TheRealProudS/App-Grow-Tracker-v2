@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,7 +81,7 @@ fun ExpandableGuideCard(category: GuideCategory, modifier: Modifier = Modifier) 
                 }
 
                 Icon(
-                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                     contentDescription = if (isExpanded) "Zuklappen" else "Aufklappen",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -170,7 +171,7 @@ fun GrowGuideScreen(
                 navigationIcon = {
                 IconButton(onClick = onNavigateBack) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Zurück"
                     )
                 }
@@ -261,7 +262,7 @@ fun GrowGuideScreen(
                 ),
                 GuideCategory(
                     title = "Ertragsoptimierung",
-                    icon = Icons.Filled.TrendingUp,
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
                     intro = "Mehr Ertrag durch Training und Lichtmanagement.",
                     bullets = listOf(
                         "Training (Topping, FIM, LST) für mehrere gleichwertige Kolas",
@@ -294,7 +295,7 @@ fun GrowGuideScreen(
                 ),
                 GuideCategory(
                     title = "Problembehandlung",
-                    icon = Icons.Filled.Help,
+                    icon = Icons.AutoMirrored.Filled.Help,
                     intro = "Schnellcheck und strukturiertes Vorgehen bei Symptomen.",
                     bullets = listOf(
                         "Gelbe Blätter: häufig N‑Mangel oder Überwässerung — pH prüfen",

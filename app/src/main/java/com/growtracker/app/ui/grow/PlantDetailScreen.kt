@@ -13,16 +13,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 // Removed LazyVerticalGrid to avoid nested lazy measurement issues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,7 +51,16 @@ import java.util.*
 fun PlantDetailScreen(plant: Plant, onBack: () -> Unit = {}) {
     var settingsOpen by remember { mutableStateOf(false) }
     var addOpen by remember { mutableStateOf(false) }
-    var selectedDate by remember { mutableStateOf<Long?>(null) }
+    val configuration = LocalConfiguration.current
+    val isSmallScreen = configuration.screenWidthDp < 360
+    // Initialize selectedDate with today's date (normalized to midnight)
+    var selectedDate by remember { 
+        mutableStateOf<Long?>(
+            Calendar.getInstance().apply { 
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) 
+            }.timeInMillis
+        ) 
+    }
 
     Scaffold(
         topBar = {
@@ -56,19 +68,19 @@ fun PlantDetailScreen(plant: Plant, onBack: () -> Unit = {}) {
             TopAppBar(
                 title = { /* intentionally empty per UI change */ },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Zurück") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück") }
                 },
                 actions = {
                     IconButton(onClick = { settingsOpen = true }) { Icon(Icons.Filled.Settings, contentDescription = "Einstellungen") }
                 }
             )
         },
-        floatingActionButton = { ExtendedFloatingActionButton(onClick = { addOpen = true }, icon = { Icon(Icons.Filled.Add, contentDescription = "Eintrag") }, text = { Text("Eintrag") }) }
+    floatingActionButton = { ExtendedFloatingActionButton(onClick = { addOpen = true }, icon = { Icon(Icons.Filled.Add, contentDescription = "Eintrag") }, text = { Text("Eintrag") }) }
     ) { inner ->
         LazyColumn(modifier = Modifier.padding(inner).fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item { PlantInfoCard(plant = plant) }
-            item { SimpleCalendarView(selectedDate = selectedDate, onSelectDate = { selectedDate = it }) }
-            item { EntriesSection(entries = plant.entries ?: emptyList(), plantId = plant.id, preferredFertilizerManufacturer = plant.preferredFertilizerManufacturer, selectedDate = selectedDate) }
+            item { PlantInfoCard(plant = plant, isSmallScreen = isSmallScreen) }
+            item { SimpleCalendarView(selectedDate = selectedDate, onSelectDate = { selectedDate = it }, isSmallScreen = isSmallScreen) }
+            item { EntriesSection(entries = plant.entries ?: emptyList(), plantId = plant.id, preferredFertilizerManufacturer = plant.preferredFertilizerManufacturer, selectedDate = selectedDate, isSmallScreen = isSmallScreen) }
         }
     }
 
@@ -81,33 +93,46 @@ fun PlantDetailScreen(plant: Plant, onBack: () -> Unit = {}) {
             plantId = plant.id,
             selectedDate = selectedDate,
             onClose = { addOpen = false },
-            preferredManufacturer = plant.preferredFertilizerManufacturer
-        ) { entry ->
-            GrowDataStore.addEntryToPlant(plant.id, entry)
-            addOpen = false
-        }
+            preferredManufacturer = plant.preferredFertilizerManufacturer,
+            onAdd = { entry ->
+                GrowDataStore.addEntryToPlant(plant.id, entry)
+                addOpen = false
+            },
+            isSmallScreen = isSmallScreen
+        )
     }
 }
 
 
 
 @Composable
-private fun PlantInfoCard(plant: Plant) {
+private fun PlantInfoCard(plant: Plant, isSmallScreen: Boolean = false) {
+    val cardPadding = if (isSmallScreen) 6.dp else 8.dp
+    val headerPadding = if (isSmallScreen) 8.dp else 10.dp
+    
     Card(shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(8.dp)) {
+        Column(modifier = Modifier.padding(cardPadding)) {
             // Compact colored header with strain above the type
             Surface(
                 shape = RoundedCornerShape(10.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(modifier = Modifier.padding(headerPadding), verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         // Strain displayed prominently but compact
                         if (plant.strain.isNotBlank()) {
-                            Text(plant.strain, style = MaterialTheme.typography.headlineSmall, maxLines = 1)
+                            Text(
+                                plant.strain, 
+                                style = if (isSmallScreen) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall, 
+                                maxLines = 1
+                            )
                         }
-                        Text(plant.type.displayName, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(
+                            plant.type.displayName, 
+                            style = MaterialTheme.typography.labelLarge, 
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     }
                     // Right side compact summary
                     // right side intentionally left empty (remove static Tage display)
@@ -117,7 +142,11 @@ private fun PlantInfoCard(plant: Plant) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // Chips row with THC, CBD, Topfgröße, optional Sämling-Label, Keimtag, Blütetag
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(), 
+                horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 6.dp else 8.dp), 
+                verticalArrangement = Arrangement.spacedBy(if (isSmallScreen) 6.dp else 8.dp)
+            ) {
                 plant.thcContent.takeIf { it.isNotBlank() }?.let { ChipSmall(label = "THC", value = "$it%") }
                 plant.cbdContent.takeIf { it.isNotBlank() }?.let { ChipSmall(label = "CBD", value = "$it%") }
 
@@ -154,7 +183,7 @@ private fun PlantInfoCard(plant: Plant) {
 }
 
 @Composable
-private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) -> Unit = {}) {
+private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) -> Unit = {}, isSmallScreen: Boolean = false) {
     // Expanded = month grid (30+ days). Collapsed = week row.
     var expanded by remember { mutableStateOf(false) }
 
@@ -185,7 +214,7 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
             }
             Text(monthTitle.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
             Spacer(modifier = Modifier.weight(1f))
-            if (expanded) {
+                if (expanded) {
                 IconButton(onClick = {
                     monthCal = (monthCal.clone() as Calendar).apply { add(Calendar.MONTH, -1) }
                 }) { Icon(Icons.Filled.ChevronLeft, contentDescription = "Vorheriger Monat") }
@@ -200,16 +229,27 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
 
     if (expanded) {
             // Weekday headers (Mon-Sun)
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                val days = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
-                days.forEach { d -> Text(d, style = MaterialTheme.typography.labelSmall, modifier = Modifier.width(40.dp), softWrap = false) }
+            // Use fixed cell sizes and center the grid so it is always horizontally centered
+            val days = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+            val cellSize = if (isSmallScreen) 40.dp else 48.dp
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                Row(modifier = Modifier.wrapContentWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    days.forEach { d ->
+                        Text(
+                            d,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.width(cellSize),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(4.dp))
 
-            // Build month grid
+            // Build month grid with fixed-sized cells
             val firstOfMonth = (monthCal.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
-            // Convert Calendar.SUNDAY=1..SATURDAY=7 into Monday-first index 0..6
             val firstWeekdayMon0 = (firstOfMonth.get(Calendar.DAY_OF_WEEK) + 5) % 7
             val daysInMonth = firstOfMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
             val totalCells = run {
@@ -217,28 +257,30 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
                 val remainder = used % 7
                 if (remainder == 0) used else used + (7 - remainder)
             }
-
             val rows = (totalCells + 6) / 7
-            Column(modifier = Modifier.padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                repeat(rows) { r ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        repeat(7) { cIdx ->
-                            val index = r * 7 + cIdx
-                            if (index < firstWeekdayMon0 || index >= firstWeekdayMon0 + daysInMonth) {
-                                Box(modifier = Modifier.size(48.dp))
-                            } else {
-                                val dayNum = index - firstWeekdayMon0 + 1
-                                val cellCal = (firstOfMonth.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, dayNum) }
-                                val cellMillis = normalizeMidnight(cellCal.timeInMillis)
-                                val isSelected = selectedMidnight != null && selectedMidnight == cellMillis
-                                val isToday = todayMidnight == cellMillis
-                                val bg = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant
 
-                                Surface(shape = RoundedCornerShape(8.dp), color = bg, modifier = Modifier.size(48.dp).clickable { onSelectDate(cellMillis) }) {
-                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                            Text(dayNum.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                                            if (isToday && !isSelected) Text("heute", style = MaterialTheme.typography.labelSmall)
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Column(modifier = Modifier.wrapContentWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(rows) { r ->
+                        Row(modifier = Modifier.wrapContentWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            repeat(7) { cIdx ->
+                                val index = r * 7 + cIdx
+                                if (index < firstWeekdayMon0 || index >= firstWeekdayMon0 + daysInMonth) {
+                                    Box(modifier = Modifier.size(cellSize))
+                                } else {
+                                    val dayNum = index - firstWeekdayMon0 + 1
+                                    val cellCal = (firstOfMonth.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, dayNum) }
+                                    val cellMillis = normalizeMidnight(cellCal.timeInMillis)
+                                    val isSelected = selectedMidnight != null && selectedMidnight == cellMillis
+                                    val isToday = todayMidnight == cellMillis
+                                    val bg = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant
+
+                                    Surface(shape = RoundedCornerShape(8.dp), color = bg, modifier = Modifier.size(cellSize).clickable { onSelectDate(cellMillis) }) {
+                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                                Text(dayNum.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                                                if (isToday && !isSelected) Text("heute", style = MaterialTheme.typography.labelSmall)
+                                            }
                                         }
                                     }
                                 }
@@ -254,22 +296,42 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
                 set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }
+            // Center the weekly row (compact)
+            val cellWidth = if (isSmallScreen) 72.dp else 84.dp
+            val listState = rememberLazyListState()
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.wrapContentWidth().padding(vertical = 4.dp)) {
+                    items(7) { offset ->
+                        val c = (base.clone() as Calendar).apply { add(Calendar.DATE, offset) }
+                        val weekday = SimpleDateFormat("E", Locale.getDefault()).format(c.time)
+                        val day = SimpleDateFormat("dd.MM", Locale.getDefault()).format(c.time)
+                        val cMid = normalizeMidnight(c.timeInMillis)
+                        val isSelected = selectedMidnight != null && selectedMidnight == cMid
+                        val bg = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant
 
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
-                items(7) { offset ->
-                    val c = (base.clone() as Calendar).apply { add(Calendar.DATE, offset) }
-                    val weekday = SimpleDateFormat("E", Locale.getDefault()).format(c.time)
-                    val day = SimpleDateFormat("dd.MM", Locale.getDefault()).format(c.time)
-                    val cMid = normalizeMidnight(c.timeInMillis)
-                    val isSelected = selectedMidnight != null && selectedMidnight == cMid
-                    val bg = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant
-
-                    Surface(shape = RoundedCornerShape(10.dp), color = bg, modifier = Modifier.size(width = 84.dp, height = 64.dp).clickable { onSelectDate(cMid) }) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                            Text(weekday, style = MaterialTheme.typography.labelSmall)
-                            Text(day, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        Surface(shape = RoundedCornerShape(10.dp), color = bg, modifier = Modifier.width(cellWidth).height(if (isSmallScreen) 48.dp else 56.dp).clickable { onSelectDate(cMid) }) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.padding(vertical = 6.dp)) {
+                                Text(weekday, style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(day, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
+                }
+            }
+            // Ensure the calendar shows and selects today's date and scrolls into view
+            LaunchedEffect(base.timeInMillis) {
+                val todayMid = normalizeMidnight(System.currentTimeMillis())
+                // find today's index in the displayed week
+                val idx = (0 until 7).indexOfFirst {
+                    val c = (base.clone() as Calendar).apply { add(Calendar.DATE, it) }
+                    normalizeMidnight(c.timeInMillis) == todayMid
+                }
+                if (idx >= 0) {
+                    // select today's date in the parent
+                    onSelectDate(todayMid)
+                    // scroll to center today's index
+                    listState.animateScrollToItem(idx)
                 }
             }
         }
@@ -277,9 +339,10 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
 }
 
 @Composable
-private fun EntriesSection(entries: List<PlantEntry>, plantId: String, preferredFertilizerManufacturer: String?, selectedDate: Long? = null) {
+private fun EntriesSection(entries: List<PlantEntry>, plantId: String, preferredFertilizerManufacturer: String?, selectedDate: Long? = null, isSmallScreen: Boolean = false) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Einträge", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 4.dp))
+    // align left padding with month/year title which uses 8.dp
+    Text("Einträge", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp))
 
         val displayed = remember(entries, selectedDate) {
             if (selectedDate == null) entries.sortedByDescending { it.date }
@@ -316,9 +379,9 @@ private fun EntriesSection(entries: List<PlantEntry>, plantId: String, preferred
                             },
                             leadingContent = {
                                 if (thumbPainter != null) {
-                                    Image(painter = thumbPainter, contentDescription = null, modifier = Modifier.size(48.dp).clickable { fullScreenUri = Uri.fromFile(File(photo!!.uri)) }, contentScale = ContentScale.Crop)
+                                    Image(painter = thumbPainter, contentDescription = null, modifier = Modifier.size(if (isSmallScreen) 40.dp else 48.dp).clickable { fullScreenUri = Uri.fromFile(File(photo!!.uri)) }, contentScale = ContentScale.Crop)
                                 } else {
-                                    androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder("camera"), contentDescription = null, modifier = Modifier.size(28.dp))
+                                    androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder("camera"), contentDescription = null, modifier = Modifier.size(if (isSmallScreen) 20.dp else 28.dp))
                                 }
                             },
                             trailingContent = {
@@ -355,9 +418,9 @@ private fun EntriesSection(entries: List<PlantEntry>, plantId: String, preferred
                     ListItem(
                         headlineContent = { Text(e.type.displayName) },
                         supportingContent = { Text(displayText) },
-                        leadingContent = { androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder(iconName), contentDescription = null, modifier = Modifier.size(28.dp)) },
+                        leadingContent = { androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder(iconName), contentDescription = null, modifier = Modifier.size(if (isSmallScreen) 20.dp else 28.dp)) },
                         trailingContent = { IconButton(onClick = { entryToDelete = e }) { Icon(Icons.Filled.Delete, contentDescription = "Löschen") } },
-                        modifier = Modifier.clickable { /* TODO: show edit dialog if needed */ }
+                        modifier = Modifier.clickable { }
                     )
                         HorizontalDivider()
                 }
@@ -399,7 +462,7 @@ private fun EntriesSection(entries: List<PlantEntry>, plantId: String, preferred
 }
 
 @Composable
-private fun AddEntryDialog(plantId: String, selectedDate: Long? = null, onClose: () -> Unit, preferredManufacturer: String? = null, onAdd: (PlantEntry) -> Unit) {
+private fun AddEntryDialog(plantId: String, selectedDate: Long? = null, onClose: () -> Unit, preferredManufacturer: String? = null, onAdd: (PlantEntry) -> Unit, isSmallScreen: Boolean = false) {
     var selectedType by remember { mutableStateOf(EntryType.WATERING) }
     var value by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
@@ -425,7 +488,7 @@ private fun AddEntryDialog(plantId: String, selectedDate: Long? = null, onClose:
 
     AlertDialog(onDismissRequest = onClose, title = { Text("Neuer Eintrag") }, text = {
         Column {
-            DropdownMenuBox(selected = selectedType, onSelect = { selectedType = it })
+            DropdownMenuBox(selected = selectedType, onSelect = { selectedType = it }, isSmallScreen = isSmallScreen)
 
             // Fertilizer flow: allow adding multiple product entries
             if (selectedType == EntryType.FERTILIZING) {
@@ -606,7 +669,7 @@ private fun AddEntryDialog(plantId: String, selectedDate: Long? = null, onClose:
 }
 
 @Composable
-private fun DropdownMenuBox(selected: EntryType, onSelect: (EntryType) -> Unit) {
+private fun DropdownMenuBox(selected: EntryType, onSelect: (EntryType) -> Unit, isSmallScreen: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         // determine icon for the currently selected type
@@ -631,7 +694,7 @@ private fun DropdownMenuBox(selected: EntryType, onSelect: (EntryType) -> Unit) 
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { expanded = true },
-            leadingIcon = { androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder(selectedIconName), contentDescription = null, modifier = Modifier.size(20.dp)) },
+            leadingIcon = { androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder(selectedIconName), contentDescription = null, modifier = Modifier.size(if (isSmallScreen) 16.dp else 20.dp)) },
             trailingIcon = { IconButton(onClick = { expanded = !expanded }) { Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null) } }
         )
 
@@ -667,7 +730,7 @@ private fun DropdownMenuBox(selected: EntryType, onSelect: (EntryType) -> Unit) 
 
                 DropdownMenuItem(
                     text = { Text(t.displayName) },
-                    leadingIcon = { androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder(iconName), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    leadingIcon = { androidx.compose.foundation.Image(painter = loadEntryIconOrPlaceholder(iconName), contentDescription = null, modifier = Modifier.size(if (isSmallScreen) 16.dp else 20.dp)) },
                     onClick = { onSelect(t); expanded = false }
                 )
             }

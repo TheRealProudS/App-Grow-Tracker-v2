@@ -1,13 +1,13 @@
 package com.growtracker.app.ui.grow
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-// using fully-qualified icon references in this file
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.window.Dialog
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,15 +17,8 @@ import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.grow.GrowDataStore
 import com.growtracker.app.data.Plant
-import com.growtracker.app.data.PlantEntry as DataPlantEntry
-import com.growtracker.app.data.EntryType as DataEntryType
 import com.growtracker.app.data.Growbox
-import com.growtracker.app.ui.grow.PlantDetailScreen
 
-// Local simplified EntryType for UI dialogs
-enum class EntryType {
-    WATER, FERTILIZER, SIZE, TEMPERATURE, HUMIDITY, TOPPING, LOLLIPOPPING, LST, NOTE
-}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GrowboxDetailScreen(
@@ -37,78 +30,52 @@ fun GrowboxDetailScreen(
     var showAddPlantDialog by remember { mutableStateOf(false) }
     var selectedPlant by remember { mutableStateOf<Plant?>(null) }
 
-    LaunchedEffect(key1 = GrowDataStore.growboxes) {
-        box = GrowDataStore.getGrowbox(growboxId)
-    }
+    LaunchedEffect(key1 = GrowDataStore.growboxes) { box = GrowDataStore.getGrowbox(growboxId) }
 
     if (selectedPlant != null) {
         PlantDetailScreen(plant = selectedPlant!!, onBack = { selectedPlant = null })
-    } else {
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text(box?.name ?: "") },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) { Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Back") }
-                    },
-                    actions = {
-                        IconButton(onClick = { /* settings placeholder */ }) { Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Settings") }
-                    }
-                )
-            },
-            floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    onClick = { showAddPlantDialog = true },
-                    icon = { Icon(imageVector = Icons.Filled.Add, null) },
-                    text = { Text("") }
-                )
-            }
-        ) { inner ->
-            box?.let { growbox ->
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(inner),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item {
-                        Card { BoxInfo(languageManager, growbox) }
-                    }
-                    item {
-                        Text("Pflanzen (${growbox.plants.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    }
-                    if (growbox.plants.isEmpty()) {
-                        item { Text("Noch keine Pflanzen", style = MaterialTheme.typography.bodyMedium) }
-                    } else {
-                        items(growbox.plants, key = { it.id }) { plant ->
-                            ElevatedCard(
-                                modifier = Modifier.fillMaxWidth().clickable { selectedPlant = plant }
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(plant.name, style = MaterialTheme.typography.bodyLarge)
-                                        Spacer(Modifier.height(6.dp))
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            plant.thcContent.takeIf { it.isNotBlank() }?.let { Text("THC: $it%", style = MaterialTheme.typography.labelSmall) }
-                                            plant.cbdContent.takeIf { it.isNotBlank() }?.let { Text("CBD: $it%", style = MaterialTheme.typography.labelSmall) }
+        return
+    }
 
-                                            // Keimtag: days since germinationDate if present, otherwise since plantingDate
-                                            val germBase = plant.germinationDate ?: plant.plantingDate.takeIf { it > 0L }
-                                            germBase?.let {
-                                                val days = ((System.currentTimeMillis() - it) / (24L * 60 * 60 * 1000)).toInt()
-                                                Text("Keimtag: $days", style = MaterialTheme.typography.labelSmall)
-                                            }
-
-                                            // Blütetag: days since floweringStartDate if present
-                                            plant.floweringStartDate?.let {
-                                                val bloomDays = ((System.currentTimeMillis() - it) / (24L * 60 * 60 * 1000)).toInt()
-                                                Text("Blütetag: $bloomDays", style = MaterialTheme.typography.labelSmall)
-                                            }
-                                        }
-                                    }
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(box?.name ?: "") },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } },
+                actions = { IconButton(onClick = { /* settings placeholder */ }) { Icon(Icons.Filled.MoreVert, contentDescription = "Settings") } }
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(onClick = { showAddPlantDialog = true }, icon = { Icon(Icons.Filled.Add, contentDescription = null) }, text = { Text("") })
+        }
+    ) { inner ->
+        box?.let { growbox ->
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(inner), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                item {
+                    Card {
+                        Box(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                            Column {
+                                Text("${growbox.width} x ${growbox.height} x ${growbox.depth} cm")
+                                Text("${growbox.lightType} ${growbox.lightPower}W")
+                            }
+                        }
+                    }
+                }
+                item {
+                    Text("Pflanzen (${growbox.plants.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                if (growbox.plants.isEmpty()) item {
+                    Text("Noch keine Pflanzen", style = MaterialTheme.typography.bodyMedium)
+                }
+                else items(growbox.plants, key = { it.id }) { plant ->
+                    ElevatedCard(modifier = Modifier.fillMaxWidth().clickable { selectedPlant = plant }) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(plant.name, style = MaterialTheme.typography.bodyLarge)
+                                Spacer(Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    plant.thcContent.takeIf { it.isNotBlank() }?.let { Text("THC: $it%", style = MaterialTheme.typography.labelSmall) }
+                                    plant.cbdContent.takeIf { it.isNotBlank() }?.let { Text("CBD: $it%", style = MaterialTheme.typography.labelSmall) }
                                 }
                             }
                         }
@@ -119,29 +86,9 @@ fun GrowboxDetailScreen(
     }
 
     if (showAddPlantDialog && box != null) {
-        AddPlantDialog(onCancel = { showAddPlantDialog = false }, onAdd = { count, plantName, manufacturer, strain, potSize, fertilizer, phase, type, bloomStartDate, harvestDate, thc, cbd, germinationDate ->
-            val germinationEpoch: Long? = germinationDate?.let {
-                runCatching { java.time.LocalDate.parse(it).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() }.getOrNull()
-            }
+        AddPlantDialog(onCancel = { showAddPlantDialog = false }, onAdd = { count, name, manufacturer, strain, potSize, fertilizer, phase, type, bloomStart, harvest, thc, cbd, germ ->
             val newPlants = (1..count).map {
-                Plant(
-                    name = plantName,
-                    manufacturer = manufacturer,
-                    strain = strain,
-                    preferredFertilizerManufacturer = fertilizer.ifBlank { null },
-                    potSize = com.growtracker.app.data.PotSize.MEDIUM, // TODO map string potSize to enum / custom
-                    floweringStartDate = bloomStartDate?.let { runCatching { java.time.LocalDate.parse(it).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() }.getOrNull() },
-                    harvestDate = harvestDate?.let { runCatching { java.time.LocalDate.parse(it).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() }.getOrNull() },
-                    thcContent = thc ?: "",
-                    cbdContent = cbd ?: "",
-                    germinationDate = germinationEpoch,
-                    type = when(type.lowercase()) {
-                        "auto","autoflower" -> com.growtracker.app.data.PlantType.AUTOFLOWER
-                        "sativa" -> com.growtracker.app.data.PlantType.FEMINIZED_SATIVA
-                        "indica" -> com.growtracker.app.data.PlantType.FEMINIZED_INDICA
-                        else -> com.growtracker.app.data.PlantType.FEMINIZED_HYBRID
-                    }
-                )
+                Plant(id = java.util.UUID.randomUUID().toString(), name = name, manufacturer = manufacturer, strain = strain, thcContent = thc ?: "", cbdContent = cbd ?: "", germinationDate = null)
             }
             val updated = box!!.copy(plants = box!!.plants + newPlants)
             GrowDataStore.updateGrowbox(updated)
@@ -150,55 +97,6 @@ fun GrowboxDetailScreen(
         })
     }
 }
-
-
-@Composable
-private fun SpeedDialIcon(type: EntryType, label: String, onClick: () -> Unit) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            FloatingActionButton(onClick = onClick, modifier = Modifier.size(40.dp), containerColor = MaterialTheme.colorScheme.secondaryContainer) {
-            Icon(imageVector = Icons.Filled.Add, contentDescription = label, modifier = Modifier.size(20.dp))
-        }
-        Text(label, style = MaterialTheme.typography.labelSmall)
-    }
-}
-
-@Composable
-fun AddEntryDialog(type: EntryType, onCancel: () -> Unit, onAdd: (DataPlantEntry) -> Unit) {
-    var value by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
-    val today = remember { java.time.LocalDate.now().toString() }
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text("Eintrag hinzufügen: $type") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (type != EntryType.NOTE) {
-                    OutlinedTextField(value = value, onValueChange = { value = it }, label = { Text("Wert") })
-                }
-                OutlinedTextField(value = note, onValueChange = { note = it }, label = { Text("Notiz") })
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val mapped = when(type){
-                    EntryType.WATER -> DataEntryType.WATERING
-                    EntryType.FERTILIZER -> DataEntryType.FERTILIZING
-                    EntryType.SIZE -> DataEntryType.HEIGHT
-                    EntryType.TEMPERATURE -> DataEntryType.TEMPERATURE
-                    EntryType.HUMIDITY -> DataEntryType.HUMIDITY
-                    EntryType.TOPPING -> DataEntryType.TOPPING
-                    EntryType.LOLLIPOPPING -> DataEntryType.LOLLIPOPPING
-                    EntryType.LST -> DataEntryType.LST
-                    EntryType.NOTE -> DataEntryType.NOTE
-                }
-                val epochDay = java.time.LocalDate.parse(today).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                onAdd(DataPlantEntry(type = mapped, value = value, notes = note, date = epochDay))
-            }) { Text("OK") }
-        },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Abbrechen") } }
-    )
-}
-
 @Composable
 private fun BoxInfo(languageManager: LanguageManager, growbox: Growbox) {
     Card(modifier = Modifier.fillMaxWidth()) {

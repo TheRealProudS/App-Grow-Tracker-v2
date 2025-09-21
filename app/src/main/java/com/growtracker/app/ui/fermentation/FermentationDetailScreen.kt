@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,7 +81,7 @@ fun FermentationDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                                     Icon(
-                                    imageVector = Icons.Filled.ArrowBack,
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = null,
                                     modifier = Modifier.size(20.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -169,7 +170,7 @@ fun FermentationDetailScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.EventNote,
+                                imageVector = Icons.AutoMirrored.Filled.EventNote,
                                 contentDescription = null,
                                 modifier = Modifier.size(36.dp)
                             )
@@ -300,7 +301,7 @@ fun FermentationStatusCard(
             Spacer(modifier = Modifier.height(12.dp))
             
             LinearProgressIndicator(
-                progress = progress,
+                progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
@@ -371,7 +372,7 @@ fun WeeklyCalendarCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { onWeekChange(-1) }) {
-                        Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Vorwoche")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Vorwoche")
                     }
                     Text(
                         text = "Diese Woche",
@@ -386,7 +387,7 @@ fun WeeklyCalendarCard(
                     val lastAllowed = todayCal.timeInMillis + 7L * 24 * 60 * 60 * 1000
                     val isNextDisabled = weekStart.timeInMillis > lastAllowed
                     IconButton(onClick = { if (!isNextDisabled) onWeekChange(1) }, enabled = !isNextDisabled) {
-                        Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Nächste Woche")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Nächste Woche")
                     }
                 }
                 
@@ -538,11 +539,11 @@ fun FermentationEntryCard(entry: FermentationEntry) {
             Icon(
             imageVector = when (entry.type) {
         FermentationEntryType.VENTILATION -> Icons.Filled.AcUnit
-                FermentationEntryType.NOTE -> Icons.Filled.Note
+                FermentationEntryType.NOTE -> Icons.AutoMirrored.Filled.Note
                 FermentationEntryType.TASK -> Icons.Filled.Task
                 FermentationEntryType.HUMIDITY_CHECK -> Icons.Filled.WaterDrop
                 FermentationEntryType.TEMPERATURE_CHECK -> Icons.Filled.Thermostat
-                else -> Icons.Filled.Help
+                else -> Icons.AutoMirrored.Filled.Help
             },
                     contentDescription = null,
                     modifier = Modifier
