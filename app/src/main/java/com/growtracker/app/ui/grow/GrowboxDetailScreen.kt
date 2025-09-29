@@ -28,6 +28,7 @@ fun GrowboxDetailScreen(
 ) {
     var box by remember { mutableStateOf<Growbox?>(GrowDataStore.getGrowbox(growboxId)) }
     var showAddPlantDialog by remember { mutableStateOf(false) }
+
     var selectedPlant by remember { mutableStateOf<Plant?>(null) }
 
     LaunchedEffect(key1 = GrowDataStore.growboxes) { box = GrowDataStore.getGrowbox(growboxId) }
