@@ -29,6 +29,11 @@ import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.language.getString
 import kotlin.math.roundToInt
+import com.growtracker.app.ui.ai.AnalyzerHolder
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
+import com.growtracker.app.data.history.ScanRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,7 +63,7 @@ fun StatisticsScreen(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Zurück"
+                            contentDescription = null
                     )
                 }
             },
@@ -82,13 +87,13 @@ fun StatisticsScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Keine Daten verfügbar",
+                    text = getString(Strings.statistics_empty_title, languageManager),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "Erstelle deine erste Growbox um Statistiken zu sehen",
+                    text = getString(Strings.statistics_empty_subtitle, languageManager),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
@@ -109,6 +114,10 @@ fun StatisticsScreen(
                         growboxes = growboxes,
                         languageManager = languageManager
                     )
+                }
+                // Recent Scan History (captured analyses)
+                item {
+                    RecentScanHistoryCard()
                 }
             }
         }
@@ -150,7 +159,7 @@ fun GrowboxStatisticsCard(
                     color = if (growbox.isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.errorContainer
                 ) {
                     Text(
-                        text = if (growbox.isActive) "Aktiv" else "Inaktiv",
+                        text = if (growbox.isActive) getString(Strings.grow_details_active, languageManager) else getString(Strings.grow_details_inactive, languageManager),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = if (growbox.isActive)
@@ -173,7 +182,7 @@ fun GrowboxStatisticsCard(
                 )
 
                 StatisticCard(
-                    title = "Dünger",
+                    title = getString(Strings.statistics_fertilizer, languageManager),
                     value = "${fertilizerStats.roundToInt()} ml",
                     icon = Icons.Filled.Science,
                     color = MaterialTheme.colorScheme.secondary,
@@ -295,15 +304,15 @@ fun PowerSettingsInfo(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 InfoItem(
-                    label = "Lichtzyklus",
+                    label = getString(Strings.power_label_light_cycle, languageManager),
                     value = lightingSettings.lightSchedule.displayName
                 )
                 InfoItem(
-                    label = "Leistung",
+                    label = getString(Strings.power_label_power, languageManager),
                     value = "${lightingSettings.powerLevel}%"
                 )
                 InfoItem(
-                    label = "Strompreis",
+                    label = getString(Strings.power_label_price, languageManager),
                     value = "${String.format("%.2f", lightingSettings.electricityPrice)} €/kWh"
                 )
             }
@@ -335,6 +344,20 @@ fun OverallStatisticsCard(
     growboxes: List<Growbox>,
     languageManager: LanguageManager
 ) {
+    val scope = rememberCoroutineScope()
+    var modelHash by remember { mutableStateOf<String?>(null) }
+    var integrityOk by remember { mutableStateOf<Boolean?>(null) }
+    var mismatch by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        scope.launch {
+            AnalyzerHolder.get()?.let { analyzer ->
+                // Access directly (analyzer handles lazy load internally when first used)
+                modelHash = analyzer.modelRuntimeHash()
+                integrityOk = analyzer.modelIntegrityVerified()
+                mismatch = analyzer.modelIntegrityMismatch()
+            }
+        }
+    }
     val totalWater = growboxes.sumOf { calculateWaterConsumption(it) }
     val totalFertilizer = growboxes.sumOf { calculateFertilizerConsumption(it) }
     val totalPowerStats = growboxes.map { calculatePowerConsumption(it) }
@@ -363,7 +386,7 @@ fun OverallStatisticsCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Gesamtstatistiken",
+                    text = getString(Strings.overall_title, languageManager),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -377,13 +400,13 @@ fun OverallStatisticsCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OverallStatItem(
-                    label = "Wasser gesamt",
+                    label = getString(Strings.overall_water_total, languageManager),
                     value = "${totalWater.roundToInt()} L",
                     icon = Icons.Filled.Water,
                     modifier = Modifier.weight(1f)
                 )
                 OverallStatItem(
-                    label = "Dünger gesamt",
+                    label = getString(Strings.overall_fertilizer_total, languageManager),
                     value = "${totalFertilizer.roundToInt()} ml",
                     icon = Icons.Filled.Science,
                     modifier = Modifier.weight(1f)
@@ -397,19 +420,61 @@ fun OverallStatisticsCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OverallStatItem(
-                    label = "Strom gesamt",
+                    label = getString(Strings.overall_power_total, languageManager),
                     value = "${String.format("%.1f", totalPowerStats.totalKwh)} kWh",
                     icon = Icons.Filled.ElectricalServices,
                     modifier = Modifier.weight(1f)
                 )
                 OverallStatItem(
-                    label = "Kosten gesamt",
+                    label = getString(Strings.overall_cost_total, languageManager),
                     value = "${String.format("%.2f", totalPowerStats.totalCost)} €",
                     icon = Icons.Filled.Euro,
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            // Model Integrity Section (only if hash known or state resolved)
+            ModelIntegrityStatus(modelHash = modelHash, integrityOk = integrityOk, mismatch = mismatch)
         }
+    }
+}
+
+@Composable
+private fun ModelIntegrityStatus(modelHash: String?, integrityOk: Boolean?, mismatch: Boolean, languageManager: LanguageManager = LanguageManager()) {
+    if (modelHash == null && integrityOk == null) return
+    Spacer(modifier = Modifier.height(16.dp))
+    HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = getString(Strings.model_integrity_title, languageManager),
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+    val statusText = when {
+        mismatch -> getString(Strings.model_integrity_warning_mismatch, languageManager)
+        integrityOk == true -> getString(Strings.model_integrity_verified, languageManager)
+        integrityOk == false -> getString(Strings.model_integrity_unverified, languageManager)
+        else -> getString(Strings.model_integrity_unknown, languageManager)
+    }
+    val statusColor = when {
+        mismatch -> MaterialTheme.colorScheme.error
+        integrityOk == true -> MaterialTheme.colorScheme.primary
+        integrityOk == false -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Text(
+        text = "${getString(Strings.model_integrity_status_label, languageManager)} $statusText",
+        style = MaterialTheme.typography.bodyMedium,
+        color = statusColor
+    )
+    if (modelHash != null) {
+        Text(
+            text = "${getString(Strings.model_integrity_sha_prefix, languageManager)} ${modelHash.take(12)}…",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -515,4 +580,63 @@ private fun calculateActiveDays(growbox: Growbox): Int {
     val oldestPlantDate = growbox.plants.minOfOrNull { it.plantingDate } ?: System.currentTimeMillis()
     val daysSincePlanting = ((System.currentTimeMillis() - oldestPlantDate) / (1000 * 60 * 60 * 24)).toInt()
     return maxOf(1, daysSincePlanting) // At least 1 day
+}
+
+@Composable
+private fun RecentScanHistoryCard(languageManager: LanguageManager = LanguageManager()) {
+    val context = LocalContext.current
+    var records by remember { mutableStateOf<List<ScanRecord>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        records = loadRecentScanHistory(context, maxItems = 10)
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(getString(Strings.recent_scans_title, languageManager), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            }
+            if (records.isEmpty()) {
+                Text(getString(Strings.recent_scans_empty, languageManager), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                records.forEach { r ->
+                    RecentScanRow(r, languageManager)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentScanRow(r: ScanRecord, languageManager: LanguageManager) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(r.label ?: "—", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            val meta = listOfNotNull(
+                r.pipelineMode?.let { "${getString(Strings.recent_scans_mode_prefix, languageManager)} $it" },
+                r.stage0Probability?.let { "${getString(Strings.recent_scans_filter_prefix, languageManager)}${String.format("%.2f", it)}" }
+            ).joinToString(" · ")
+            if (meta.isNotBlank()) {
+                Text(meta, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Text(r.confidence?.let { "${(it * 100).toInt()}%" } ?: "", style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+private fun loadRecentScanHistory(context: android.content.Context, maxItems: Int): List<ScanRecord> {
+    val base = java.io.File(context.filesDir, "scan_history")
+    val log = java.io.File(base, "history.jsonl")
+    if (!log.exists()) return emptyList()
+    return runCatching {
+        val lines = log.readLines().takeLast(maxItems)
+        val json = Json { ignoreUnknownKeys = true }
+        lines.mapNotNull { line ->
+            runCatching { json.decodeFromString<ScanRecord>(line) }.getOrNull()
+        }.reversed() // newest first
+    }.getOrElse { emptyList() }
 }

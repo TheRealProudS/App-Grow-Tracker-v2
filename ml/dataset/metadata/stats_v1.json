@@ -1,0 +1,9 @@
+{
+  "version": "v1.0.0-draft",
+  "generated": null,
+  "class_counts": {},
+  "mean": null,
+  "std": null,
+  "imbalance_index": null,
+  "notes": "Populate via stats script once raw dataset imported"
+}

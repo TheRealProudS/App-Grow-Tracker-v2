@@ -1,0 +1,25 @@
+{
+  "id": "nitrogen_deficiency_basics",
+  "question": "Wie erkenne ich einen Stickstoffmangel (Nitrogen Deficiency) an der Pflanze?",
+  "answer": "**Erkennung:** Untere ältere Blätter werden gleichmäßig hellgelb (Chlorose), beginnend an der Spitze, gesamte Blattfläche wird blass. Wachstum verlangsamt sich.\n\n**Abgrenzung:** Im Gegensatz zu Magnesium-Mangel sind keine klaren grünen Blattadern (interveinal) stehen geblieben; Vergilbung ist gleichmäßig.\n\n**Maßnahmen (allgemein):**\n1. Substrat-EC prüfen (zu niedrige Nährstoffverfügbarkeit?).\n2. Leicht erhöhte, ausgewogene N-Düngergabe (kein Überschuss).\n3. pH im optimalen Bereich halten (Erde 6.2–6.5).\n4. Beobachtung über 5–7 Tage; neue Blätter müssen wieder kräftig grün sein.\n\n**Hinweis:** Bereits vergilbte Blätter werden sich nicht vollständig regenerieren. Fokus auf neues Wachstum.",
+  "tags": ["nutrient","nitrogen","chlorosis"],
+  "category": "deficiency",
+  "sources": [{"name": "Agrar Fachliteratur"}],
+  "created_utc": "2025-09-29T10:00:00Z",
+  "version": 1,
+  "language": "de",
+  "disclaimers": ["Keine rechtliche oder medizinische Beratung"],
+  "related": [],
+  "stage": "vegetative",
+  "severity_levels": ["mild","moderate","severe"],
+  "remediation_steps": [
+    "EC und pH messen",
+    "Leicht dosierte Nährstoffgabe mit N-Anteil",
+    "Überwässerung vermeiden",
+    "Verlauf dokumentieren"
+  ],
+  "detection_signals": [
+    "Gleichmäßige Gelbfärbung älterer Blätter",
+    "Verlangsamtes Längenwachstum"
+  ]
+}

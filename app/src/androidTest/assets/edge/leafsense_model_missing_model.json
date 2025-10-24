@@ -1,0 +1,6 @@
+{
+  "model_version": "edge_case_missing_model",
+  "input_size": 224,
+  "classes": ["healthy","nitrogen_deficiency"],
+  "knowledge": {"kb_version":"edge","merged_file":"edge/corrupt_kb.jsonl"}
+}

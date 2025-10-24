@@ -1,0 +1,6 @@
+healthy
+nitrogen_deficiency
+overwatering
+pests_risk
+leaf_spot
+ph_imbalance

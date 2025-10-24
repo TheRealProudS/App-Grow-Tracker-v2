@@ -1,0 +1,222 @@
+# ----------------------------------------------------------------------------
+# Model Quality Gate Workflow
+#
+# DATA & SECRETS HANDLING (siehe Kommentarblock unten):
+# Optionen:
+# 1) Git LFS (kleine Testmenge committen)
+# 2) Artifact aus vorherigem Training-Workflow herunterladen
+# 3) Externer Download (Secret: DATASET_URL)
+# 4) On-the-fly Sample Build (Skript) – für reine Smoke Tests
+#
+# Secrets Beispiele:
+#   DATASET_URL        -> Download Link für Testset Archiv
+#   SLACK_WEBHOOK_URL  -> (optional) Notification bei Gate-Failure
+#
+# Compliance:
+# - Keine PII/EXIF in Testbildern
+# - Lizenz prüfen falls extern
+# ----------------------------------------------------------------------------
+name: Model Quality Gate
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ml/**'
+      - 'app/src/main/assets/**'
+      - '.github/workflows/model-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'ml/**'
+      - 'app/src/main/assets/**'
+  workflow_dispatch:
+    inputs:
+      max_drop:
+        description: 'Max allowed accuracy & macro-F1 drop (%)'
+        default: '3.0'
+        required: false
+      image_size:
+        description: 'Eval image size'
+        default: '224'
+        required: false
+      strict_fail:
+        description: 'Force fail on any delta violation (true/false)'
+        default: 'true'
+        required: false
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      PYTHON_VERSION: '3.11'
+      ONNX_MODEL: ml/outputs/latest/model_simplified.onnx
+      QUANT_DIR: ml/outputs/latest/quant
+      DATA_ROOT: datasets/plant_v1/images
+      META_CSV: datasets/plant_v1/meta_test.csv
+      CLASSES: healthy,chlorosis,fungus,necrosis
+      MANIFEST_OUT: app/src/main/assets/leafsense_model.json
+      MAX_DROP: ${{ github.event.inputs.max_drop || '3.0' }}
+      IMAGE_SIZE: ${{ github.event.inputs.image_size || '224' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install numpy Pillow onnx onnx2tf tensorflow==2.13.0
+          # Optional (embedding/retrieval future): sentence-transformers faiss-cpu
+        shell: bash
+
+      # Optional dataset download (if secret provided)
+      - name: Download dataset (optional)
+        if: secrets.DATASET_URL != ''
+        env:
+          DATASET_URL: ${{ secrets.DATASET_URL }}
+        run: |
+          echo "Download dataset from $DATASET_URL" || true
+          curl -L "$DATASET_URL" -o dataset.zip
+          unzip -q dataset.zip -d datasets
+        shell: bash
+
+      - name: Validate dataset presence
+        run: |
+          test -d "${DATA_ROOT}" || { echo "Dataset root ${DATA_ROOT} missing"; exit 1; }
+          test -f "${META_CSV}" || { echo "Meta CSV ${META_CSV} missing"; exit 1; }
+        shell: bash
+
+      - name: Run CI Gate
+        run: |
+          python ml/ci_gate.py \
+            --onnx "${ONNX_MODEL}" \
+            --quant-dir "${QUANT_DIR}" \
+            --data-root "${DATA_ROOT}" \
+            --meta "${META_CSV}" \
+            --classes "${CLASSES}" \
+            --max-drop "${MAX_DROP}" \
+            --image-size "${IMAGE_SIZE}" \
+            --manifest-out "${MANIFEST_OUT}"
+        shell: bash
+
+      - name: Verify Model Hash
+        run: |
+          if [ -f "${MANIFEST_OUT}" ]; then
+            echo "Verifying model hash integrity...";
+            python ml/verify_model_hash.py \
+              --manifest "${MANIFEST_OUT}" \
+              --search-dirs app/src/main/assets "${QUANT_DIR}" \
+              --require;
+          else
+            echo "Manifest not found at ${MANIFEST_OUT}; cannot verify hash"; exit 1;
+          fi
+        shell: bash
+
+      - name: Append Metrics History (optional)
+        if: always()
+        run: |
+          if ls artifacts/quant_eval/*_tflite_eval.json 1>/dev/null 2>&1; then 
+            latest=$(ls -1 artifacts/quant_eval/*_tflite_eval.json | tail -n 1);
+            python ml/append_metrics_history.py --eval-json "$latest" --csv artifacts/metrics_history.csv || true;
+          else
+            echo "No eval JSON found for metrics history.";
+          fi
+        shell: bash
+
+      - name: Upload Manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+            name: leafsense-manifest
+            path: ${{ env.MANIFEST_OUT }}
+            if-no-files-found: warn
+
+      - name: Manifest Diff (optional)
+        if: always()
+        run: |
+          # Download previous manifest artifact if available (requires retention of artifacts across runs or external storage)
+          echo "Attempting manifest diff...";
+          PREV_MANIFEST=artifacts_prev/leafsense_model.json
+          mkdir -p artifacts_prev || true
+          # (Optional) placeholder: user can add download-artifact step before this to populate artifacts_prev
+          if [ ! -f "$PREV_MANIFEST" ]; then
+            echo "No previous manifest found (first run or missing artifact).";
+          fi
+          python ml/manifest_diff.py \
+            --old "$PREV_MANIFEST" \
+            --new "$MANIFEST_OUT" \
+            --json-out artifacts/manifest_diff.json \
+            --fail-on-loss --max-macro-drop 0.01 --max-acc-drop 0.01 --allow-missing-old || echo "Manifest diff gate non-blocking initial run";
+        shell: bash
+
+      - name: Build CI Report
+        if: always()
+        run: |
+          python ml/build_ci_report.py \
+            --manifest "$MANIFEST_OUT" \
+            --diff-json artifacts/manifest_diff.json \
+            --eval-glob artifacts/quant_eval/*_tflite_eval.json \
+            --history artifacts/metrics_history.csv \
+            --out-json artifacts/ci_report.json \
+            --out-md artifacts/ci_report.md
+          echo "CI Report generated:"; ls -l artifacts/ci_report.* || true
+        shell: bash
+
+      - name: Upload CI Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-report
+          path: |
+            artifacts/ci_report.json
+            artifacts/ci_report.md
+            artifacts/manifest_diff.json
+            artifacts/metrics_history.csv
+          if-no-files-found: warn
+
+      - name: Upload Quant & Eval Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+            name: quant-and-eval
+            path: |
+              ${{ env.QUANT_DIR }}/ptq_report.json
+              artifacts/quant_eval/*_tflite_eval.json
+            if-no-files-found: warn
+
+      - name: Summarize Metrics
+        if: always()
+        run: |
+          ls -1 artifacts/quant_eval || true
+          latest=$(ls -1 artifacts/quant_eval/*_tflite_eval.json 2>/dev/null | tail -n 1 || echo '')
+          if [ -n "$latest" ]; then
+            echo "Latest eval report: $latest";
+            grep -E '"(macro_f1|accuracy|delta_macro_f1_pct|delta_accuracy_pct)"' "$latest" || true;
+          else
+            echo "No eval report found";
+          fi
+        shell: bash
+
+      - name: Slack Notification (optional)
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          macro=$(jq -r '.metrics.macro_f1 // empty' artifacts/ci_report.json 2>/dev/null || echo '?')
+          acc=$(jq -r '.metrics.accuracy // empty' artifacts/ci_report.json 2>/dev/null || echo '?')
+            gate=$(jq -r '.gate_violated // empty' artifacts/ci_report.json 2>/dev/null || echo 'unknown')
+          msg="Model CI FAILED ($GITHUB_REPOSITORY@$GITHUB_SHA) macro_f1=${macro} acc=${acc} gate=${gate}";
+          payload=$(jq -n --arg t "$msg" '{text: $t}')
+          curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
+        shell: bash

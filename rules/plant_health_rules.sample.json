@@ -1,0 +1,38 @@
+[
+  {
+    "id": "nitrogen_deficiency_basic",
+    "match": { "labels_any": ["nitrogen_deficiency"] },
+    "priority": 2,
+    "title": "Stickstoff nachführen",
+    "message": "Leichte gelbliche Chlorose erkannt. Prüfe EC-Wert und ergänze moderat einen N-betonten Dünger (z.B. 2:1:1 Verhältnis).",
+    "actions": ["Düngerlösung ansetzen", "In 5–7 Tagen prüfen"],
+    "evidence": {"min_confidence": 0.55}
+  },
+  {
+    "id": "calcium_deficiency_progressive",
+    "match": { "labels_any": ["calcium_deficiency"], "min_confidence": 0.6 },
+    "priority": 3,
+    "title": "Calciumzufuhr verbessern",
+    "message": "Junge Blätter mit Nekrosen/Verformung. Achte auf pH (5.8–6.3) und stelle konstante Ca-Quelle sicher (z.B. CalMag).",
+    "actions": ["pH messen", "CalMag Dosierung anpassen", "Drain kontrollieren"],
+    "evidence": {"min_confidence": 0.6}
+  },
+  {
+    "id": "overwatering_warning",
+    "match": { "labels_any": ["overwatering"], "min_confidence": 0.5 },
+    "priority": 2,
+    "title": "Gießrhythmus reduzieren",
+    "message": "Anzeichen von Überwässerung. Substrat stärker abtrocknen lassen, Drainage prüfen und ggf. Luftzirkulation erhöhen.",
+    "actions": ["Gießpause einlegen", "Topf abtropfen lassen"],
+    "evidence": {"min_confidence": 0.5}
+  },
+  {
+    "id": "pest_scouting",
+    "match": { "labels_any": ["pest_suspect"], "min_confidence": 0.45 },
+    "priority": 3,
+    "title": "Auf Schädlinge untersuchen",
+    "message": "Mögliche Fraßspuren oder Punkte. Unterseiten der Blätter mit Lupe kontrollieren und ggf. Gelbtafeln einsetzen.",
+    "actions": ["Lupe verwenden", "Klebetafeln platzieren", "Isolieren falls bestätigt"],
+    "evidence": {"min_confidence": 0.45}
+  }
+]

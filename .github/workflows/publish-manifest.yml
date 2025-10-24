@@ -1,0 +1,48 @@
+name: Publish Manifest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/src/main/assets/leafsense_model.json'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare manifest branch
+        run: |
+          git fetch origin manifests || true
+          if git rev-parse --verify origin/manifests >/dev/null 2>&1; then
+            git checkout manifests
+            git merge --ff-only origin/manifests || true
+            git checkout -
+          fi
+
+      - name: Read manifest
+        id: read
+        run: |
+          MF=app/src/main/assets/leafsense_model.json
+          test -f "$MF" || { echo "Manifest missing"; exit 1; }
+          VERSION=$(jq -r '.model_version // "unknown"' "$MF")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update manifests branch
+        run: |
+          MF=app/src/main/assets/leafsense_model.json
+          VERSION=${{ steps.read.outputs.version }}
+          git checkout -B manifests
+          mkdir -p latest versions
+          cp "$MF" latest/leafsense_model.json
+          cp "$MF" "versions/${VERSION}.json"
+          git add latest/leafsense_model.json "versions/${VERSION}.json"
+          git commit -m "Update manifest $VERSION" || echo "No changes to commit"
+          git push origin manifests

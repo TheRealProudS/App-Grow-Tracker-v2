@@ -39,6 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import com.growtracker.app.ui.language.getString
 import com.growtracker.app.data.EntryType
 import com.growtracker.app.data.Plant
 import com.growtracker.app.data.PlantEntry
@@ -85,7 +86,13 @@ fun PlantDetailScreen(plant: Plant, onBack: () -> Unit = {}) {
     }
 
     if (settingsOpen) {
-        PlantSettingsDialog(plant = plant, onClose = { settingsOpen = false }, onUpdate = { updated -> GrowDataStore.updatePlant(updated) }, onDelete = { id -> GrowDataStore.removePlant(id); onBack() })
+        PlantSettingsDialog(
+            plant = plant,
+            selectedDate = selectedDate,
+            onClose = { settingsOpen = false },
+            onUpdate = { updated -> GrowDataStore.updatePlant(updated) },
+            onDelete = { id -> GrowDataStore.removePlant(id); onBack() }
+        )
     }
 
     if (addOpen) {
@@ -141,7 +148,7 @@ private fun PlantInfoCard(plant: Plant, isSmallScreen: Boolean = false) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Chips row with THC, CBD, Topfgröße, optional Sämling-Label, Keimtag, Blütetag
+            // Chips row with THC, CBD, pot size, optional seedling label, germ day, bloom day
             FlowRow(
                 modifier = Modifier.fillMaxWidth(), 
                 horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 6.dp else 8.dp), 
@@ -153,7 +160,7 @@ private fun PlantInfoCard(plant: Plant, isSmallScreen: Boolean = false) {
                 val potLabel = plant.customPotSize?.takeIf { it.isNotBlank() }?.let {
                     val t = it.trim(); if (t.lowercase().endsWith("l")) t else "$t L"
                 } ?: (plant.potSize.displayName ?: "-")
-                ChipSmall(label = "Topf", value = potLabel)
+                ChipSmall(label = getString(com.growtracker.app.ui.language.GrowStrings.chip_pot), value = potLabel)
 
                 // Phase chip (only show as distinct chip for Sämling to match overview)
                 val phase = derivePhase(plant)
@@ -167,15 +174,21 @@ private fun PlantInfoCard(plant: Plant, isSmallScreen: Boolean = false) {
                     }
                 }
 
-                // Keimtag computed from germinationDate if set, otherwise from plantingDate
+                // Germ day computed from germinationDate if set, otherwise from plantingDate
                 val keimBase = plant.germinationDate ?: plant.plantingDate
                 val keimDays = ((System.currentTimeMillis() - keimBase) / (24L * 60 * 60 * 1000)).toInt()
-                ChipSmall(label = "Keimtag", value = keimDays.toString())
+                ChipSmall(label = getString(com.growtracker.app.ui.language.GrowStrings.chip_germ_day), value = keimDays.toString())
 
-                // Blütetag if floweringStartDate is present
+                // Bloom day if floweringStartDate is present
                 plant.floweringStartDate?.let {
                     val bloomDays = ((System.currentTimeMillis() - it) / (24L * 60 * 60 * 1000)).toInt()
-                    ChipSmall(label = "Blütetag", value = bloomDays.toString())
+                    ChipSmall(label = getString(com.growtracker.app.ui.language.GrowStrings.chip_bloom_day), value = bloomDays.toString())
+                }
+
+                // Estimated remaining days to harvest if in bloom and no harvest set
+                val remaining = daysToHarvest(plant)
+                if (remaining != null && remaining > 0) {
+                    ChipSmall(label = getString(com.growtracker.app.ui.language.GrowStrings.chip_days_to_harvest), value = remaining.toString())
                 }
             }
         }
@@ -342,7 +355,7 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
 private fun EntriesSection(entries: List<PlantEntry>, plantId: String, preferredFertilizerManufacturer: String?, selectedDate: Long? = null, isSmallScreen: Boolean = false) {
     Column(modifier = Modifier.fillMaxWidth()) {
     // align left padding with month/year title which uses 8.dp
-    Text("Einträge", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp))
+    Text(getString(com.growtracker.app.ui.language.GrowStrings.entries_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp))
 
         val displayed = remember(entries, selectedDate) {
             if (selectedDate == null) entries.sortedByDescending { it.date }
@@ -356,7 +369,7 @@ private fun EntriesSection(entries: List<PlantEntry>, plantId: String, preferred
         }
 
         if (displayed.isEmpty()) {
-            Text("Keine Einträge für diesen Tag", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp))
+            Text(getString(com.growtracker.app.ui.language.GrowStrings.no_entries_today), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp))
         } else {
             val plant = GrowDataStore.plants.find { it.id == plantId }
             var fullScreenUri by remember { mutableStateOf<Uri?>(null) }
@@ -747,19 +760,19 @@ private fun loadEntryIconOrPlaceholder(name: String): androidx.compose.ui.graphi
 }
 
 @Composable
-private fun PlantSettingsDialog(plant: Plant, onClose: () -> Unit, onUpdate: (Plant) -> Unit, onDelete: (String) -> Unit) {
+private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -> Unit, onUpdate: (Plant) -> Unit, onDelete: (String) -> Unit) {
     var preferredFert by remember { mutableStateOf(plant.preferredFertilizerManufacturer ?: "") }
     var potLiters by remember { mutableStateOf(plant.customPotSize ?: "") }
     var fertExpanded by remember { mutableStateOf(false) }
 
-    AlertDialog(onDismissRequest = onClose, title = { Text("Pflanze bearbeiten") }, text = {
+    AlertDialog(onDismissRequest = onClose, title = { Text(getString(com.growtracker.app.ui.language.GrowStrings.edit_plant_title)) }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Preferred fertilizer manufacturer dropdown
             val manufacturers = com.growtracker.app.data.getFertilizerManufacturers()
             OutlinedTextField(
                 value = preferredFert,
                 onValueChange = {},
-                label = { Text("Bevorzugter Dünger") },
+                label = { Text(getString(com.growtracker.app.ui.language.GrowStrings.preferred_fertilizer)) },
                 readOnly = true,
                 trailingIcon = {
                     IconButton(onClick = { fertExpanded = !fertExpanded }) { Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null) }
@@ -770,17 +783,63 @@ private fun PlantSettingsDialog(plant: Plant, onClose: () -> Unit, onUpdate: (Pl
                 manufacturers.forEach { m ->
                     DropdownMenuItem(text = { Text(m.name) }, onClick = { preferredFert = m.name; fertExpanded = false })
                 }
-                DropdownMenuItem(text = { Text("Keine Auswahl") }, onClick = { preferredFert = ""; fertExpanded = false })
+                DropdownMenuItem(text = { Text(getString(com.growtracker.app.ui.language.GrowStrings.no_selection)) }, onClick = { preferredFert = ""; fertExpanded = false })
             }
 
             // Custom pot size in liters
             OutlinedTextField(
                 value = potLiters,
                 onValueChange = { potLiters = it.filter { ch -> ch.isDigit() || ch == '.' } },
-                label = { Text("Topfgröße (L)") },
+                label = { Text(getString(com.growtracker.app.ui.language.GrowStrings.pot_size_liters)) },
                 placeholder = { Text("z.B. 5.5") },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // Bloom controls
+            Spacer(Modifier.height(8.dp))
+            Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_section_title), style = MaterialTheme.typography.titleSmall)
+            if (plant.floweringStartDate == null) {
+                Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_not_started), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = {
+                    // Use the currently selected calendar day as day 1; normalize to midnight.
+                    val start = selectedDate ?: kotlin.run {
+                        val cal = java.util.Calendar.getInstance().apply {
+                            set(java.util.Calendar.HOUR_OF_DAY, 0)
+                            set(java.util.Calendar.MINUTE, 0)
+                            set(java.util.Calendar.SECOND, 0)
+                            set(java.util.Calendar.MILLISECOND, 0)
+                        }
+                        cal.timeInMillis
+                    }
+                    val updated = plant.copy(floweringStartDate = start)
+                    onUpdate(updated)
+                }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_start_on_selected)) }
+            } else {
+                val days = bloomDays(plant) ?: 0
+                val remaining = daysToHarvest(plant)
+                val info = buildString {
+                    append("Seit ")
+                    append(days)
+                    append(" ")
+                    append(getString(com.growtracker.app.ui.language.GrowStrings.days_suffix))
+                    append(" in ")
+                    append(getString(com.growtracker.app.ui.language.GrowStrings.bloom_section_title))
+                    if (remaining != null) {
+                        append(" · ")
+                        append(getString(com.growtracker.app.ui.language.GrowStrings.eta_prefix))
+                        append(remaining)
+                        append(" ")
+                        append(getString(com.growtracker.app.ui.language.GrowStrings.eta_days_to_harvest))
+                    }
+                }
+                Text(info, style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = {
+                        val updated = plant.copy(floweringStartDate = null)
+                        onUpdate(updated)
+                    }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_reset)) }
+                }
+            }
         }
     }, confirmButton = {
             TextButton(onClick = {
@@ -790,12 +849,12 @@ private fun PlantSettingsDialog(plant: Plant, onClose: () -> Unit, onUpdate: (Pl
             )
             onUpdate(updated)
             onClose()
-        }) { Text("Speichern") }
+        }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_save)) }
     }, dismissButton = {
         Row {
-            TextButton(onClick = { onDelete(plant.id); onClose() }) { Text("Löschen", color = MaterialTheme.colorScheme.error) }
+            TextButton(onClick = { onDelete(plant.id); onClose() }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_delete), color = MaterialTheme.colorScheme.error) }
             Spacer(modifier = Modifier.width(8.dp))
-            TextButton(onClick = onClose) { Text("Abbrechen") }
+            TextButton(onClick = onClose) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_cancel)) }
         }
     })
 }

@@ -49,7 +49,8 @@ fun OverviewScreen(
     modifier: Modifier = Modifier,
     languageManager: LanguageManager,
     onOpenGrowGuide: () -> Unit = {},
-    onOpenStatistics: () -> Unit = {}
+    onOpenStatistics: () -> Unit = {},
+    onOpenLeafSense: () -> Unit = {}
 ) {
     var showGallery by remember { mutableStateOf(false) }
     Box(
@@ -112,11 +113,11 @@ fun OverviewScreen(
                     )
                     
                         FeatureCard(
-                        title = "Trocknung",
-                        description = "",
-                            icon = Icons.Filled.AcUnit,
-                        backgroundColor = Color(0xFFFF9800),
-                        onClick = {},
+                        title = "LeafSense KI",
+                        description = "Analyse",
+                            icon = Icons.Filled.Nature,
+                        backgroundColor = Color(0xFF7CB342),
+                        onClick = onOpenLeafSense,
                         modifier = Modifier.weight(1f),
                         isCompact = true
                     )

@@ -1,0 +1,21 @@
+{
+  "version": "v1.0.0",
+  "classes": [
+    "HEALTHY",
+    "NUTRIENT_DEF_N",
+    "NUTRIENT_DEF_P",
+    "NUTRIENT_DEF_K",
+    "NUTRIENT_DEF_MG",
+    "NUTRIENT_DEF_FE",
+    "OVERWATER_STRESS",
+    "UNDERWATER_STRESS",
+    "HEAT_STRESS",
+    "COLD_STRESS",
+    "LIGHT_BURN",
+    "FUNGAL_SPOTS_GENERIC",
+    "MILDEW_LIKE",
+    "LEAF_PEST_INDICATOR",
+    "NECROSIS_EDGE",
+    "GENERAL_CHLOROSIS"
+  ]
+}

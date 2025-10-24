@@ -1,0 +1,27 @@
+{
+  "model_version": "sample_dev_placeholder",
+  "model_file": "model_fp32.tflite",
+  "input_size": 224,
+  "format": "tflite",
+  "quantization": "fp32",
+  "classes": [
+    "healthy",
+    "nitrogen_deficiency",
+    "overwatering",
+    "pests_risk",
+    "leaf_spot",
+    "ph_imbalance"
+  ],
+  "normalization": {
+    "mean": [0.485, 0.456, 0.406],
+    "std": [0.229, 0.224, 0.225]
+  },
+  "knowledge": {
+    "kb_version": "kb_sample_v0",
+    "merged_file": "knowledge/build/merged.jsonl",
+    "index_file": "knowledge/build/index.faiss",
+    "entry_count": 1,
+    "note": "Wird automatisch gesetzt wenn --kb-* Parameter an generate_manifest.py übergeben werden"
+  },
+  "note": "Ersetze diese Datei via ml/generate_manifest.py im CI Prozess."
+}

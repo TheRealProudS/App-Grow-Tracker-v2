@@ -1,0 +1,89 @@
+# Baseline Trainingskonfiguration (v0.1)
+# Aufruf: python ml/train.py --config ml/configs/baseline.yaml --out outputs/run_001
+
+experiment:
+  id: mnet_v3s_augA_lr8e-4_v1
+  seed: 42
+  device: auto  # cuda | mps | cpu
+  mixed_precision: true  # aktiviert torch.cuda.amp (nur wenn CUDA verfügbar)
+
+model:
+  name: mobilenet_v3_small
+  num_classes: 10
+  image_size: 224
+
+optimizer:
+  name: adamw
+  lr: 0.0008
+  weight_decay: 0.02
+  betas: [0.9, 0.999]
+  warmup_epochs: 2      # lineares Warmup auf Ziel-LR
+  cosine_schedule: true # nach Warmup Cosine Decay
+  min_lr: 0.00008       # untere Grenze für Cosine (10% von lr)
+
+train:
+  epochs: 35
+  batch_size: 64
+  num_workers: 4
+  gradient_clip_norm: 5.0
+  early_stop_patience: 6
+
+augment:
+  random_resized_crop: true
+  horizontal_flip_prob: 0.5
+  color_jitter: {brightness: 0.2, contrast: 0.15, saturation: 0.15, hue: 0.05, prob: 0.8}
+  gaussian_blur_prob: 0.15
+  brightness_contrast_prob: 0.5
+  mixup: {enabled: false, alpha: 0.2}
+  cutmix: {enabled: false, alpha: 1.0}
+
+loss:
+  name: cross_entropy
+  label_smoothing: 0.05
+  class_weights: null  # optional: Liste [w0,w1,...] ODER Pfad zu JSON-Datei mit Liste (wird automatisch geladen)
+
+data:
+  root: datasets/plant_v1/images
+  meta_csv: datasets/plant_v1/meta.csv
+  split: split_v1
+  cache: false
+
+logging:
+  interval_steps: 50
+  save_best_metric: macro_f1
+
+export:
+  onnx: true
+  tflite: true
+  int8_quant: true              # Steuert ob später PTQ versucht wird (separates Skript)
+  representative_set: 128       # Zielanzahl repräsentativer Bilder für Full Int8 PTQ
+  ptq_enabled: true             # Hinweisflag (nur Doku; quantize_ptq.py separat ausführen)
+  simplify_onnx: true  # ONNX nach Export mit onnxsim vereinfachen
+
+# CLI Zusatzoptionen (nicht Teil der YAML, aber wichtig):
+# --fast-dev-run  -> führt nur 2 Trainingsbatches & 1 Val-Batch aus (Smoke Test)
+# --resume path/to/best.pt -> lädt bestehenden Checkpoint und setzt Training fort
+# --deterministic -> aktiviert deterministische cuDNN Ausführung (niedrigere Performance möglich)
+# --log-dir tb_logs/run_X -> aktiviert TensorBoard Logging (Scalars + Confusion Matrix)
+# --lr-find -> führt Learning Rate Range Test aus (optionale Parameter: --lr-find-min, --lr-find-max, --lr-find-steps)
+# --pr-curve -> berechnet macro Precision/Recall Kurve (pr_curve.json)
+# --html-report -> erstellt training_report.html
+# --median-early-stop-window N / --median-early-stop-patience P / --median-min-delta D -> Median-basierte Early Stopping Strategie
+
+metrics:
+  topk: [1,3]
+  calc_confusion: true
+  per_class: true
+
+# Distillation (Knowledge Distillation Einstellungen)
+distillation:
+  enabled: false           # Auf true setzen um distill.py zu verwenden
+  teacher_checkpoint: null # Pfad zu Teacher Gewichten (.pt) falls externes größeres Modell
+  teacher_arch: mobilenet_v3_large  # Nur genutzt falls Teacher on-the-fly geladen wird
+  temperature: 4.0         # Temperatur für Soft Targets (höher = weichere Verteilung)
+  alpha: 0.7               # Anteil harter CrossEntropy (alpha) vs. KL-Divergenz (1-alpha)
+  freeze_teacher: true     # Teacher nur Inference (kein Grad)
+  student_from_scratch: true  # False: Student initialisiert ggf. aus Teacher (gleiche Arch)
+  kd_loss: kl_div          # (kl_div | mse_logits) – Erweiterung möglich
+
+# Platz für zukünftige Sektionen (qat, active_learning)

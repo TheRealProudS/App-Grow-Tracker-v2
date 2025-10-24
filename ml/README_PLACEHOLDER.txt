@@ -1,0 +1,1 @@
+Placeholder to avoid empty directory commits if needed.

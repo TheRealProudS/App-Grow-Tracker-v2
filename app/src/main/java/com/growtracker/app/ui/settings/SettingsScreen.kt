@@ -33,16 +33,26 @@ import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Language
 import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.language.getString
+import com.growtracker.app.ui.language.resolveString
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import com.growtracker.app.data.consent.DataUploadConsentRepository
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
     themeManager: ThemeManager,
-    languageManager: LanguageManager
+    languageManager: LanguageManager,
+    consentRepository: DataUploadConsentRepository? = null
 ) {
     var notificationsEnabled by remember { mutableStateOf(true) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showSystemInfoDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var dataUploadConsent by remember { mutableStateOf(false) }
+    LaunchedEffect(consentRepository) {
+        consentRepository?.consentFlow?.collectLatest { dataUploadConsent = it }
+    }
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -111,6 +121,22 @@ fun SettingsScreen(
                 )
             }
 
+            // Data Upload Consent - Samsung Style
+            item {
+                SamsungSettingsItem(
+                    title = getString(Strings.data_upload_title, languageManager),
+                    subtitle = if (dataUploadConsent) getString(Strings.generic_active, languageManager) else getString(Strings.generic_disabled, languageManager),
+                    icon = Icons.Filled.CloudUpload,
+                    isSwitch = true,
+                    switchChecked = dataUploadConsent,
+                    onSwitchChange = { enabled ->
+                        if (consentRepository != null) {
+                            scope.launch { consentRepository.setConsent(enabled) }
+                        }
+                    }
+                )
+            }
+
             // Divider
             item {
                 HorizontalDivider(
@@ -153,7 +179,7 @@ fun SettingsScreen(
                                     val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(webInvite))
                                     ctx.startActivity(fallback)
                                 } catch (ex: Exception) {
-                                    Toast.makeText(ctx, "Kann Link nicht öffnen", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(ctx, resolveString(Strings.error_cannot_open_link, languageManager.currentLanguage), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }, modifier = Modifier
@@ -168,7 +194,7 @@ fun SettingsScreen(
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Join us on Discord", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(getString(Strings.discord_join, languageManager), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

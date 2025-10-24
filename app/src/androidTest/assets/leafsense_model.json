@@ -1,0 +1,13 @@
+{
+  "model_version": "test_local",
+  "model_file": "leafsense_model.tflite",
+  "input_size": 224,
+  "quantization": "fp32",
+  "classes": ["healthy","nitrogen_deficiency","overwatering"],
+  "normalization": {"mean":[0.485,0.456,0.406],"std":[0.229,0.224,0.225]},
+  "knowledge": {
+    "kb_version": "test_kb",
+    "merged_file": "knowledge/build/merged.jsonl",
+    "entry_count": 2
+  }
+}

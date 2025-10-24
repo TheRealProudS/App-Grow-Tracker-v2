@@ -110,6 +110,27 @@ object Strings {
         Language.FRENCH to "Afficher les informations système",
         Language.ITALIAN to "Mostra informazioni di sistema"
     )
+    val data_upload_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Anonyme Bild-Uploads",
+        Language.ENGLISH to "Anonymous image uploads",
+        Language.SPANISH to "Cargas de imágenes anónimas",
+        Language.FRENCH to "Téléversements d'images anonymes",
+        Language.ITALIAN to "Caricamenti di immagini anonimi"
+    )
+    val generic_active: Map<Language, String> = mapOf(
+        Language.GERMAN to "Aktiv",
+        Language.ENGLISH to "Enabled",
+        Language.SPANISH to "Activado",
+        Language.FRENCH to "Activé",
+        Language.ITALIAN to "Attivo"
+    )
+    val generic_disabled: Map<Language, String> = mapOf(
+        Language.GERMAN to "Deaktiviert",
+        Language.ENGLISH to "Disabled",
+        Language.SPANISH to "Desactivado",
+        Language.FRENCH to "Désactivé",
+        Language.ITALIAN to "Disattivato"
+    )
     
     // Language Dialog
     val language_select_title: Map<Language, String> = mapOf(
@@ -218,6 +239,20 @@ object Strings {
         Language.FRENCH to "Guide de Culture",
         Language.ITALIAN to "Guida alla Coltivazione"
     )
+    val discord_join: Map<Language, String> = mapOf(
+        Language.GERMAN to "Tritt unserem Discord bei",
+        Language.ENGLISH to "Join us on Discord",
+        Language.SPANISH to "Únete a nuestro Discord",
+        Language.FRENCH to "Rejoignez-nous sur Discord",
+        Language.ITALIAN to "Unisciti a noi su Discord"
+    )
+    val error_cannot_open_link: Map<Language, String> = mapOf(
+        Language.GERMAN to "Kann Link nicht öffnen",
+        Language.ENGLISH to "Cannot open link",
+        Language.SPANISH to "No se puede abrir el enlace",
+        Language.FRENCH to "Impossible d'ouvrir le lien",
+        Language.ITALIAN to "Impossibile aprire il link"
+    )
     
     val overview_placeholder_1: Map<Language, String> = mapOf(
         Language.GERMAN to "Statistik",
@@ -268,6 +303,20 @@ object Strings {
         Language.FRENCH to "Statistiques",
         Language.ITALIAN to "Statistiche"
     )
+    val statistics_empty_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Keine Daten verfügbar",
+        Language.ENGLISH to "No data available",
+        Language.SPANISH to "No hay datos disponibles",
+        Language.FRENCH to "Aucune donnée disponible",
+        Language.ITALIAN to "Nessun dato disponibile"
+    )
+    val statistics_empty_subtitle: Map<Language, String> = mapOf(
+        Language.GERMAN to "Erstelle deine erste Growbox um Statistiken zu sehen",
+        Language.ENGLISH to "Create your first growbox to see statistics",
+        Language.SPANISH to "Crea tu primera growbox para ver estadísticas",
+        Language.FRENCH to "Créez votre première growbox pour voir les statistiques",
+        Language.ITALIAN to "Crea la tua prima growbox per vedere le statistiche"
+    )
     
     val statistics_water_consumption: Map<Language, String> = mapOf(
         Language.GERMAN to "Wasserverbrauch",
@@ -283,6 +332,13 @@ object Strings {
         Language.SPANISH to "Consumo de Fertilizante",
         Language.FRENCH to "Consommation d'Engrais",
         Language.ITALIAN to "Consumo di Fertilizzante"
+    )
+    val statistics_fertilizer: Map<Language, String> = mapOf(
+        Language.GERMAN to "Dünger",
+        Language.ENGLISH to "Fertilizer",
+        Language.SPANISH to "Fertilizante",
+        Language.FRENCH to "Engrais",
+        Language.ITALIAN to "Fertilizzante"
     )
     
     val statistics_power_consumption: Map<Language, String> = mapOf(
@@ -315,6 +371,145 @@ object Strings {
         Language.SPANISH to "Configuración de Energía",
         Language.FRENCH to "Paramètres d'Alimentation",
         Language.ITALIAN to "Impostazioni di Alimentazione"
+    )
+    val power_label_light_cycle: Map<Language, String> = mapOf(
+        Language.GERMAN to "Lichtzyklus",
+        Language.ENGLISH to "Light cycle",
+        Language.SPANISH to "Ciclo de luz",
+        Language.FRENCH to "Cycle lumineux",
+        Language.ITALIAN to "Ciclo di luce"
+    )
+    val power_label_power: Map<Language, String> = mapOf(
+        Language.GERMAN to "Leistung",
+        Language.ENGLISH to "Power",
+        Language.SPANISH to "Potencia",
+        Language.FRENCH to "Puissance",
+        Language.ITALIAN to "Potenza"
+    )
+    val power_label_price: Map<Language, String> = mapOf(
+        Language.GERMAN to "Strompreis",
+        Language.ENGLISH to "Electricity price",
+        Language.SPANISH to "Precio de la electricidad",
+        Language.FRENCH to "Prix de l'électricité",
+        Language.ITALIAN to "Prezzo dell'elettricità"
+    )
+
+    // Overall stats section
+    val overall_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Gesamtstatistiken",
+        Language.ENGLISH to "Overall statistics",
+        Language.SPANISH to "Estadísticas generales",
+        Language.FRENCH to "Statistiques globales",
+        Language.ITALIAN to "Statistiche complessive"
+    )
+    val overall_water_total: Map<Language, String> = mapOf(
+        Language.GERMAN to "Wasser gesamt",
+        Language.ENGLISH to "Total water",
+        Language.SPANISH to "Agua total",
+        Language.FRENCH to "Eau totale",
+        Language.ITALIAN to "Acqua totale"
+    )
+    val overall_fertilizer_total: Map<Language, String> = mapOf(
+        Language.GERMAN to "Dünger gesamt",
+        Language.ENGLISH to "Total fertilizer",
+        Language.SPANISH to "Fertilizante total",
+        Language.FRENCH to "Engrais total",
+        Language.ITALIAN to "Fertilizzante totale"
+    )
+    val overall_power_total: Map<Language, String> = mapOf(
+        Language.GERMAN to "Strom gesamt",
+        Language.ENGLISH to "Total power",
+        Language.SPANISH to "Energía total",
+        Language.FRENCH to "Énergie totale",
+        Language.ITALIAN to "Energia totale"
+    )
+    val overall_cost_total: Map<Language, String> = mapOf(
+        Language.GERMAN to "Kosten gesamt",
+        Language.ENGLISH to "Total cost",
+        Language.SPANISH to "Costo total",
+        Language.FRENCH to "Coût total",
+        Language.ITALIAN to "Costo totale"
+    )
+
+    // Model integrity section
+    val model_integrity_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Modell Integrität",
+        Language.ENGLISH to "Model integrity",
+        Language.SPANISH to "Integridad del modelo",
+        Language.FRENCH to "Intégrité du modèle",
+        Language.ITALIAN to "Integrità del modello"
+    )
+    val model_integrity_status_label: Map<Language, String> = mapOf(
+        Language.GERMAN to "Status:",
+        Language.ENGLISH to "Status:",
+        Language.SPANISH to "Estado:",
+        Language.FRENCH to "Statut :",
+        Language.ITALIAN to "Stato:"
+    )
+    val model_integrity_warning_mismatch: Map<Language, String> = mapOf(
+        Language.GERMAN to "Warnung: Hash Mismatch",
+        Language.ENGLISH to "Warning: Hash mismatch",
+        Language.SPANISH to "Advertencia: Hash desigual",
+        Language.FRENCH to "Avertissement : Hash différent",
+        Language.ITALIAN to "Avviso: Hash non corrisponde"
+    )
+    val model_integrity_verified: Map<Language, String> = mapOf(
+        Language.GERMAN to "Verifiziert",
+        Language.ENGLISH to "Verified",
+        Language.SPANISH to "Verificado",
+        Language.FRENCH to "Vérifié",
+        Language.ITALIAN to "Verificato"
+    )
+    val model_integrity_unverified: Map<Language, String> = mapOf(
+        Language.GERMAN to "Nicht verifiziert",
+        Language.ENGLISH to "Not verified",
+        Language.SPANISH to "No verificado",
+        Language.FRENCH to "Non vérifié",
+        Language.ITALIAN to "Non verificato"
+    )
+    val model_integrity_unknown: Map<Language, String> = mapOf(
+        Language.GERMAN to "Unbekannt",
+        Language.ENGLISH to "Unknown",
+        Language.SPANISH to "Desconocido",
+        Language.FRENCH to "Inconnu",
+        Language.ITALIAN to "Sconosciuto"
+    )
+    val model_integrity_sha_prefix: Map<Language, String> = mapOf(
+        Language.GERMAN to "SHA256:",
+        Language.ENGLISH to "SHA256:",
+        Language.SPANISH to "SHA256:",
+        Language.FRENCH to "SHA256 :",
+        Language.ITALIAN to "SHA256:"
+    )
+
+    // Recent scan history
+    val recent_scans_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Kürzliche Scans",
+        Language.ENGLISH to "Recent scans",
+        Language.SPANISH to "Escaneos recientes",
+        Language.FRENCH to "Analyses récentes",
+        Language.ITALIAN to "Scansioni recenti"
+    )
+    val recent_scans_empty: Map<Language, String> = mapOf(
+        Language.GERMAN to "Noch keine Aufnahmen analysiert",
+        Language.ENGLISH to "No captures analyzed yet",
+        Language.SPANISH to "Aún no se han analizado capturas",
+        Language.FRENCH to "Aucune capture analysée pour l'instant",
+        Language.ITALIAN to "Nessuna acquisizione ancora analizzata"
+    )
+    val recent_scans_mode_prefix: Map<Language, String> = mapOf(
+        Language.GERMAN to "Modus:",
+        Language.ENGLISH to "Mode:",
+        Language.SPANISH to "Modo:",
+        Language.FRENCH to "Mode :",
+        Language.ITALIAN to "Modalità:"
+    )
+    val recent_scans_filter_prefix: Map<Language, String> = mapOf(
+        Language.GERMAN to "Filter p=",
+        Language.ENGLISH to "Filter p=",
+        Language.SPANISH to "Filtro p=",
+        Language.FRENCH to "Filtre p=",
+        Language.ITALIAN to "Filtro p="
     )
     
     // Grow Section
@@ -416,4 +611,208 @@ object Strings {
 @Composable
 fun getString(stringMap: Map<Language, String>, languageManager: LanguageManager = LocalLanguageManager.current): String {
     return stringMap[languageManager.currentLanguage] ?: stringMap[Language.ENGLISH] ?: ""
+}
+
+// Non-composable resolver for use outside @Composable contexts (e.g., click listeners, toasts)
+fun resolveString(stringMap: Map<Language, String>, language: Language): String {
+    return stringMap[language] ?: stringMap[Language.ENGLISH] ?: ""
+}
+
+// Grow-specific strings
+object GrowStrings {
+    val my_plants_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Meine Pflanzen",
+        Language.ENGLISH to "My plants",
+        Language.SPANISH to "Mis plantas",
+        Language.FRENCH to "Mes plantes",
+        Language.ITALIAN to "Le mie piante"
+    )
+    val add_plant_button: Map<Language, String> = mapOf(
+        Language.GERMAN to "Pflanze hinzufügen",
+        Language.ENGLISH to "Add plant",
+        Language.SPANISH to "Añadir planta",
+        Language.FRENCH to "Ajouter une plante",
+        Language.ITALIAN to "Aggiungi pianta"
+    )
+    val no_plants: Map<Language, String> = mapOf(
+        Language.GERMAN to "Keine Pflanzen vorhanden",
+        Language.ENGLISH to "No plants yet",
+        Language.SPANISH to "No hay plantas",
+        Language.FRENCH to "Aucune plante",
+        Language.ITALIAN to "Nessuna pianta"
+    )
+    val plants_label: Map<Language, String> = mapOf(
+        Language.GERMAN to "Pflanzen",
+        Language.ENGLISH to "Plants",
+        Language.SPANISH to "Plantas",
+        Language.FRENCH to "Plantes",
+        Language.ITALIAN to "Piante"
+    )
+    val no_plants_yet: Map<Language, String> = mapOf(
+        Language.GERMAN to "Noch keine Pflanzen",
+        Language.ENGLISH to "No plants yet",
+        Language.SPANISH to "Aún no hay plantas",
+        Language.FRENCH to "Pas encore de plantes",
+        Language.ITALIAN to "Ancora nessuna pianta"
+    )
+    val bloom_since_prefix: Map<Language, String> = mapOf(
+        Language.GERMAN to "Blüte seit",
+        Language.ENGLISH to "Blooming for",
+        Language.SPANISH to "Floración desde hace",
+        Language.FRENCH to "Floraison depuis",
+        Language.ITALIAN to "In fioritura da"
+    )
+    val days_suffix: Map<Language, String> = mapOf(
+        Language.GERMAN to "Tagen",
+        Language.ENGLISH to "days",
+        Language.SPANISH to "días",
+        Language.FRENCH to "jours",
+        Language.ITALIAN to "giorni"
+    )
+    val eta_prefix: Map<Language, String> = mapOf(
+        Language.GERMAN to "ca.",
+        Language.ENGLISH to "approx.",
+        Language.SPANISH to "aprox.",
+        Language.FRENCH to "env.",
+        Language.ITALIAN to "circa"
+    )
+    val eta_days_to_harvest: Map<Language, String> = mapOf(
+        Language.GERMAN to "Tage bis Ernte",
+        Language.ENGLISH to "days to harvest",
+        Language.SPANISH to "días hasta la cosecha",
+        Language.FRENCH to "jours avant récolte",
+        Language.ITALIAN to "giorni al raccolto"
+    )
+
+    // Plant detail – chips and sections
+    val chip_pot: Map<Language, String> = mapOf(
+        Language.GERMAN to "Topf",
+        Language.ENGLISH to "Pot",
+        Language.SPANISH to "Maceta",
+        Language.FRENCH to "Pot",
+        Language.ITALIAN to "Vaso"
+    )
+    val chip_germ_day: Map<Language, String> = mapOf(
+        Language.GERMAN to "Keimtag",
+        Language.ENGLISH to "Germ day",
+        Language.SPANISH to "Día de germinación",
+        Language.FRENCH to "Jour de germination",
+        Language.ITALIAN to "Giorno di germinazione"
+    )
+    val chip_bloom_day: Map<Language, String> = mapOf(
+        Language.GERMAN to "Blütetag",
+        Language.ENGLISH to "Bloom day",
+        Language.SPANISH to "Día de floración",
+        Language.FRENCH to "Jour de floraison",
+        Language.ITALIAN to "Giorno di fioritura"
+    )
+    val chip_days_to_harvest: Map<Language, String> = mapOf(
+        Language.GERMAN to "Bis Ernte",
+        Language.ENGLISH to "To harvest",
+        Language.SPANISH to "Hasta cosecha",
+        Language.FRENCH to "Avant récolte",
+        Language.ITALIAN to "Al raccolto"
+    )
+    val entries_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Einträge",
+        Language.ENGLISH to "Entries",
+        Language.SPANISH to "Entradas",
+        Language.FRENCH to "Entrées",
+        Language.ITALIAN to "Registrazioni"
+    )
+    val no_entries_today: Map<Language, String> = mapOf(
+        Language.GERMAN to "Keine Einträge für diesen Tag",
+        Language.ENGLISH to "No entries for this day",
+        Language.SPANISH to "Sin entradas para este día",
+        Language.FRENCH to "Aucune entrée pour ce jour",
+        Language.ITALIAN to "Nessuna voce per questo giorno"
+    )
+
+    // Settings (plant)
+    val edit_plant_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Pflanze bearbeiten",
+        Language.ENGLISH to "Edit plant",
+        Language.SPANISH to "Editar planta",
+        Language.FRENCH to "Modifier la plante",
+        Language.ITALIAN to "Modifica pianta"
+    )
+    val preferred_fertilizer: Map<Language, String> = mapOf(
+        Language.GERMAN to "Bevorzugter Dünger",
+        Language.ENGLISH to "Preferred fertilizer",
+        Language.SPANISH to "Fertilizante preferido",
+        Language.FRENCH to "Engrais préféré",
+        Language.ITALIAN to "Fertilizzante preferito"
+    )
+    val no_selection: Map<Language, String> = mapOf(
+        Language.GERMAN to "Keine Auswahl",
+        Language.ENGLISH to "No selection",
+        Language.SPANISH to "Sin selección",
+        Language.FRENCH to "Aucune sélection",
+        Language.ITALIAN to "Nessuna selezione"
+    )
+    val pot_size_liters: Map<Language, String> = mapOf(
+        Language.GERMAN to "Topfgröße (L)",
+        Language.ENGLISH to "Pot size (L)",
+        Language.SPANISH to "Tamaño de maceta (L)",
+        Language.FRENCH to "Taille du pot (L)",
+        Language.ITALIAN to "Dimensione vaso (L)"
+    )
+    val bloom_section_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Blüte",
+        Language.ENGLISH to "Bloom",
+        Language.SPANISH to "Floración",
+        Language.FRENCH to "Floraison",
+        Language.ITALIAN to "Fioritura"
+    )
+    val bloom_not_started: Map<Language, String> = mapOf(
+        Language.GERMAN to "Noch nicht in Blüte",
+        Language.ENGLISH to "Not blooming yet",
+        Language.SPANISH to "Aún sin floración",
+        Language.FRENCH to "Pas encore en floraison",
+        Language.ITALIAN to "Non ancora in fioritura"
+    )
+    val bloom_start_on_selected: Map<Language, String> = mapOf(
+        Language.GERMAN to "Blüte starten (am ausgewählten Tag)",
+        Language.ENGLISH to "Start bloom (on selected day)",
+        Language.SPANISH to "Iniciar floración (día seleccionado)",
+        Language.FRENCH to "Démarrer floraison (jour sélectionné)",
+        Language.ITALIAN to "Avvia fioritura (giorno selezionato)"
+    )
+    val bloom_reset: Map<Language, String> = mapOf(
+        Language.GERMAN to "Zurücksetzen",
+        Language.ENGLISH to "Reset",
+        Language.SPANISH to "Restablecer",
+        Language.FRENCH to "Réinitialiser",
+        Language.ITALIAN to "Reimposta"
+    )
+
+    // Generic buttons
+    val generic_ok: Map<Language, String> = mapOf(
+        Language.GERMAN to "OK",
+        Language.ENGLISH to "OK",
+        Language.SPANISH to "OK",
+        Language.FRENCH to "OK",
+        Language.ITALIAN to "OK"
+    )
+    val generic_cancel: Map<Language, String> = mapOf(
+        Language.GERMAN to "Abbrechen",
+        Language.ENGLISH to "Cancel",
+        Language.SPANISH to "Cancelar",
+        Language.FRENCH to "Annuler",
+        Language.ITALIAN to "Annulla"
+    )
+    val generic_save: Map<Language, String> = mapOf(
+        Language.GERMAN to "Speichern",
+        Language.ENGLISH to "Save",
+        Language.SPANISH to "Guardar",
+        Language.FRENCH to "Enregistrer",
+        Language.ITALIAN to "Salva"
+    )
+    val generic_delete: Map<Language, String> = mapOf(
+        Language.GERMAN to "Löschen",
+        Language.ENGLISH to "Delete",
+        Language.SPANISH to "Eliminar",
+        Language.FRENCH to "Supprimer",
+        Language.ITALIAN to "Elimina"
+    )
 }

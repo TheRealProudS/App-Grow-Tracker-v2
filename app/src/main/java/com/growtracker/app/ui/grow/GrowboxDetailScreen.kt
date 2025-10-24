@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Strings
+import com.growtracker.app.ui.language.getString
 import com.growtracker.app.ui.grow.GrowDataStore
 import com.growtracker.app.data.Plant
 import com.growtracker.app.data.Growbox
@@ -63,10 +64,10 @@ fun GrowboxDetailScreen(
                     }
                 }
                 item {
-                    Text("Pflanzen (${growbox.plants.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("${getString(com.growtracker.app.ui.language.GrowStrings.plants_label)} (${growbox.plants.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 if (growbox.plants.isEmpty()) item {
-                    Text("Noch keine Pflanzen", style = MaterialTheme.typography.bodyMedium)
+                    Text(getString(com.growtracker.app.ui.language.GrowStrings.no_plants_yet), style = MaterialTheme.typography.bodyMedium)
                 }
                 else items(growbox.plants, key = { it.id }) { plant ->
                     ElevatedCard(modifier = Modifier.fillMaxWidth().clickable { selectedPlant = plant }) {
@@ -77,6 +78,27 @@ fun GrowboxDetailScreen(
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     plant.thcContent.takeIf { it.isNotBlank() }?.let { Text("THC: $it%", style = MaterialTheme.typography.labelSmall) }
                                     plant.cbdContent.takeIf { it.isNotBlank() }?.let { Text("CBD: $it%", style = MaterialTheme.typography.labelSmall) }
+                                }
+                                // Bloom status and ETA
+                                val bDays = bloomDays(plant)
+                                val eta = daysToHarvest(plant)
+                                if (bDays != null && plant.harvestDate == null) {
+                                    val line = buildString {
+                                        append(getString(com.growtracker.app.ui.language.GrowStrings.bloom_since_prefix))
+                                        append(" ")
+                                        append(bDays)
+                                        append(" ")
+                                        append(getString(com.growtracker.app.ui.language.GrowStrings.days_suffix))
+                                        if (eta != null) {
+                                            append(" · ")
+                                            append(getString(com.growtracker.app.ui.language.GrowStrings.eta_prefix))
+                                            append(" ")
+                                            append(eta)
+                                            append(" ")
+                                            append(getString(com.growtracker.app.ui.language.GrowStrings.eta_days_to_harvest))
+                                        }
+                                    }
+                                    Text(line, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }

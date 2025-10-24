@@ -95,3 +95,32 @@ Desktop.ini
 
 # VS Code
 .vscode/
+
+# ML / Training artifacts
+ml/outputs/
+ml/**/*.pt
+ml/**/*.onnx
+ml/**/*.tflite
+ml/**/plan.json
+
+# Datasets (raw & processed) - keep out of repo
+datasets/
+data/
+
+# Python virtual envs
+.venv/
+venv/
+env/
+
+# Caches
+*.ipynb_checkpoints
+*.cache
+
+# Model experimentation scratch
+ml/tmp/
+ml/.cache/
+
+# User specific
+*.swp
+*.swo
+

@@ -45,3 +45,32 @@ fun derivePhase(plant: Plant): String = when {
         }
     }
 }
+
+/**
+ * Returns number of days since flowering started, or null if not started.
+ */
+fun bloomDays(plant: Plant): Int? = plant.floweringStartDate?.let {
+    (((System.currentTimeMillis() - it) / (1000L * 60 * 60 * 24))).toInt().coerceAtLeast(0)
+}
+
+/**
+ * Heuristic expected bloom duration in days based on plant type.
+ * Defaults are conservative and can be refined later or made configurable.
+ */
+fun expectedBloomDays(plant: Plant): Int = when (plant.type) {
+    com.growtracker.app.data.PlantType.AUTOFLOWER -> 70
+    com.growtracker.app.data.PlantType.FEMINIZED_SATIVA -> 63
+    com.growtracker.app.data.PlantType.FEMINIZED_INDICA -> 56
+    com.growtracker.app.data.PlantType.FEMINIZED_HYBRID -> 56
+}
+
+/**
+ * Estimated remaining days to harvest relative to expected bloom duration.
+ * Returns null if flowering hasn't started yet or harvest already set.
+ */
+fun daysToHarvest(plant: Plant): Int? {
+    if (plant.harvestDate != null) return 0
+    val started = bloomDays(plant) ?: return null
+    val rem = expectedBloomDays(plant) - started
+    return rem.coerceAtLeast(0)
+}

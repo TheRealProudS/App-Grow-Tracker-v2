@@ -20,6 +20,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.growtracker.app.ui.language.getString
 import com.growtracker.app.ui.grow.GrowDataStore
 import com.growtracker.app.data.Plant
 import com.growtracker.app.data.PlantType
@@ -48,17 +49,17 @@ fun GrowScreenV2(
             ExtendedFloatingActionButton(
                 onClick = { showAdd = true },
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text("Pflanze hinzufügen") }
+                text = { Text(getString(com.growtracker.app.ui.language.GrowStrings.add_plant_button, languageManager)) }
             )
         }
     ) { inner ->
         Column(modifier = Modifier.padding(inner).padding(if (isSmallScreen) 8.dp else 12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "Meine Pflanzen", style = MaterialTheme.typography.titleLarge)
+                Text(text = getString(com.growtracker.app.ui.language.GrowStrings.my_plants_title, languageManager), style = MaterialTheme.typography.titleLarge)
                 TextButton(onClick = onOpenGrowGuide) {
                     Icon(imageVector = Icons.AutoMirrored.Filled.MenuBook, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Grow-Guide")
+                    Text(getString(com.growtracker.app.ui.language.Strings.overview_grow_guide, languageManager))
                 }
             }
 
@@ -68,7 +69,7 @@ fun GrowScreenV2(
 
             if (plants.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Keine Pflanzen vorhanden")
+                    Text(getString(com.growtracker.app.ui.language.GrowStrings.no_plants, languageManager))
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -99,6 +100,27 @@ private fun PlantRow(plant: Plant, onClick: (String) -> Unit) {
                 val title = plant.name.ifBlank { plant.manufacturer.ifBlank { "Unbenannt" } }
                 Text(text = title, style = MaterialTheme.typography.titleMedium)
                 if (!plant.strain.isNullOrBlank()) Text(text = plant.strain ?: "", style = MaterialTheme.typography.bodySmall)
+                // Bloom status and ETA
+                val bDays = bloomDays(plant)
+                val eta = daysToHarvest(plant)
+                if (bDays != null && plant.harvestDate == null) {
+                    val line = buildString {
+                        append(getString(com.growtracker.app.ui.language.GrowStrings.bloom_since_prefix, com.growtracker.app.ui.language.LocalLanguageManager.current))
+                        append(" ")
+                        append(bDays)
+                        append(" ")
+                        append(getString(com.growtracker.app.ui.language.GrowStrings.days_suffix, com.growtracker.app.ui.language.LocalLanguageManager.current))
+                        if (eta != null) {
+                            append(" · ")
+                            append(getString(com.growtracker.app.ui.language.GrowStrings.eta_prefix, com.growtracker.app.ui.language.LocalLanguageManager.current))
+                            append(" ")
+                            append(eta)
+                            append(" ")
+                            append(getString(com.growtracker.app.ui.language.GrowStrings.eta_days_to_harvest, com.growtracker.app.ui.language.LocalLanguageManager.current))
+                        }
+                    }
+                    Text(text = line, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             Column(horizontalAlignment = Alignment.End) {
                 if (!plant.thcContent.isNullOrBlank()) Text(text = "THC: ${plant.thcContent}%", style = MaterialTheme.typography.labelSmall)
@@ -161,7 +183,7 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Neue Pflanze hinzufügen") },
+        title = { Text(getString(com.growtracker.app.ui.language.GrowStrings.add_plant_button)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -261,8 +283,9 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                     }
                 }
 
+                // Show the stored formatted germ value directly; avoid parsing a dd.MM.yyyy string with ISO parser (crash fix)
                 OutlinedTextField(
-                    value = if (germ.isBlank()) "" else java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy").format(java.time.LocalDate.parse(germ)),
+                    value = germ,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Keimdatum") },
@@ -281,8 +304,8 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                 val defaultName = if (manufacturer.isNotBlank() && strain.isNotBlank()) "$manufacturer - $strain" else "Neue Pflanze"
                 val plant = Plant(id = "", name = defaultName, manufacturer = manufacturer, strain = strain, thcContent = thc, cbdContent = cbd, germinationDate = if (germinationEpoch == 0L) null else germinationEpoch)
                 onAdd(countInt.coerceAtLeast(1), plant)
-            }, enabled = countInt > 0) { Text("OK") }
+            }, enabled = countInt > 0) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_ok)) }
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text("Abbrechen") } }
+        dismissButton = { TextButton(onClick = onCancel) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_cancel)) } }
     )
 }

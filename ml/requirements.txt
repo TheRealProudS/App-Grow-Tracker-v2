@@ -1,0 +1,35 @@
+torch==2.2.0
+torchvision==0.17.0
+timm==0.9.12
+Pillow==10.3.0
+pyyaml==6.0.1
+numpy==1.26.4
+onnxruntime==1.18.0  # für ONNX Inferenz (CPU)
+# Optional GPU Variante: onnxruntime-gpu==1.18.0
+onnx==1.16.0
+onnxsim==0.4.36
+# PTQ / TFLite Konvertierung
+tensorflow==2.13.0
+onnx2tf==1.18.0
+
+# Logging / Monitoring
+tensorboard==2.13.0
+
+# Metrics / Analysis
+scikit-learn==1.5.1
+
+# Visualization
+matplotlib==3.9.2
+
+# Qualität / Tools
+jsonschema==4.22.0
+tqdm==4.66.4
+
+# Embeddings / Knowledge Base (optional, können entfernt werden wenn nicht gebraucht)
+sentence-transformers==2.7.0
+# faiss-cpu kann auf Windows Probleme machen; nur unter Linux/Mac aktivieren.
+faiss-cpu==1.8.0.post1 ; platform_system != 'Windows'
+
+# Hinweise:
+# - Versions-Pins stellen Reproduzierbarkeit sicher.
+# - Entferne Pakete, die du nicht brauchst, um das Environment schlank zu halten.
