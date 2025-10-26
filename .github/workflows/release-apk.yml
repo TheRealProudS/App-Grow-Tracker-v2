@@ -37,29 +37,29 @@ jobs:
         shell: bash
         run: |
           set -e
-          SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          SDKMANAGER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
           if [ ! -x "$SDKMANAGER" ]; then
             SDKMANAGER="$(command -v sdkmanager || true)"
           fi
           if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found" >&2
-            exit 1
+            echo "Warning: sdkmanager not found; skipping license acceptance"
+          else
+            yes | "$SDKMANAGER" --licenses || true
           fi
-          yes | "$SDKMANAGER" --licenses || true
 
       - name: Install required Android SDK packages
         shell: bash
         run: |
           set -e
-          SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          SDKMANAGER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
           if [ ! -x "$SDKMANAGER" ]; then
             SDKMANAGER="$(command -v sdkmanager || true)"
           fi
           if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found" >&2
-            exit 1
+            echo "Warning: sdkmanager not found; relying on default setup from setup-android action"
+          else
+            "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
           fi
-          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
