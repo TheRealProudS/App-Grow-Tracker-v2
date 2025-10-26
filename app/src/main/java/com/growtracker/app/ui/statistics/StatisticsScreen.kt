@@ -32,6 +32,7 @@ import kotlin.math.roundToInt
 import com.growtracker.app.ui.ai.AnalyzerHolder
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import com.growtracker.app.data.history.ScanHistoryRepository
 import kotlinx.serialization.decodeFromString
 import com.growtracker.app.data.history.ScanRecord
 
@@ -104,7 +105,7 @@ fun StatisticsScreen(
                 modifier = Modifier.fillMaxSize().padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(growboxes) { growbox ->
+                items(growboxes, key = { it.id }) { growbox ->
                     GrowboxStatisticsCard(growbox = growbox, languageManager = languageManager)
                 }
 
@@ -629,14 +630,6 @@ private fun RecentScanRow(r: ScanRecord, languageManager: LanguageManager) {
 }
 
 private fun loadRecentScanHistory(context: android.content.Context, maxItems: Int): List<ScanRecord> {
-    val base = java.io.File(context.filesDir, "scan_history")
-    val log = java.io.File(base, "history.jsonl")
-    if (!log.exists()) return emptyList()
-    return runCatching {
-        val lines = log.readLines().takeLast(maxItems)
-        val json = Json { ignoreUnknownKeys = true }
-        lines.mapNotNull { line ->
-            runCatching { json.decodeFromString<ScanRecord>(line) }.getOrNull()
-        }.reversed() // newest first
-    }.getOrElse { emptyList() }
+    // Prefer encrypted records; repository handles legacy fallback automatically
+    return ScanHistoryRepository.loadRecent(context, maxItems)
 }

@@ -67,7 +67,7 @@ fun PlantStatisticsScreen(
                 modifier = Modifier.fillMaxSize().padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(plants) { plant ->
+                items(plants, key = { it.id }) { plant ->
                     PlantStatsCard(plant = plant)
                 }
             }

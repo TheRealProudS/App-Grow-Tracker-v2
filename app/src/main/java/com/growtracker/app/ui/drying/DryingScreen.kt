@@ -2,6 +2,8 @@ package com.growtracker.app.ui.drying
 
 import com.growtracker.app.data.FermentationMethod
 import com.growtracker.app.data.GrowDataManager
+import com.growtracker.app.data.EntryType
+import com.growtracker.app.data.PlantEntry
 import com.growtracker.app.data.Plant
 import com.growtracker.app.data.PlantPhoto
 import com.growtracker.app.data.PlantType
@@ -36,7 +38,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.growtracker.app.ui.language.LanguageManager
+import com.growtracker.app.ui.grow.GrowDataStore
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,14 +53,8 @@ fun DryingScreen(
     onPlantClick: (Plant) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val dataManager: GrowDataManager = remember { GrowDataManager(context) }
-    
-    // Get all plants that are currently drying
-    val dryingPlants = remember(dataManager) {
-        dataManager.loadGrowboxes()
-            .flatMap { it.plants }
-            .filter { it.isDrying }
-    }
+    // Observe drying plants from GrowDataStore so UI updates live
+    val dryingPlants by remember { derivedStateOf { GrowDataStore.plants.filter { it.isDrying } } }
     
     Scaffold(
         topBar = {
@@ -137,7 +137,7 @@ fun DryingScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(dryingPlants) { plant ->
+                    items(dryingPlants, key = { it.id }) { plant ->
                         DryingPlantCard(
                             plant = plant,
                             onClick = { onPlantClick(plant) }
@@ -166,12 +166,21 @@ fun DryingPlantCard(
     val optimalTemperature = "18-20°C"
     val optimalHumidity = "50-60%"
     val remainingDryingDays = maxOf(0, optimalDryingDays - daysSinceDryingStart)
+    // Allow undo of drying within 24h
+    val canUndoDrying = (currentTime - dryingStartDate) <= 24L * 60L * 60L * 1000L
     
     // Calculate estimated date for curing (fermentation)
     val estimatedCuringStartDate = dryingStartDate + (optimalDryingDays * 24 * 60 * 60 * 1000)
     // Format dates
     val harvestDateFormatted = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(harvestDate)
+    val dryingStartFormatted = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(dryingStartDate)
     val curingDateFormatted = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(estimatedCuringStartDate)
+
+    // Quick input state for temp/humidity
+    var tempText by remember { mutableStateOf("") }
+    var humidityText by remember { mutableStateOf("") }
+
+    var showFermentationDialog by remember { mutableStateOf(false) }
 
     Card(
         onClick = onClick,
@@ -179,11 +188,11 @@ fun DryingPlantCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             // Header Row
             Row(
@@ -209,84 +218,141 @@ fun DryingPlantCard(
                     }
                 }
                 
-                // Drying Status Badge
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = when {
-                        daysSinceDryingStart >= optimalDryingDays -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                        else -> Color(0xFFFF9800).copy(alpha = 0.2f)
-                    }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.AcUnit,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = when {
-                                daysSinceDryingStart >= optimalDryingDays -> Color(0xFF4CAF50)
-                                else -> Color(0xFFFF9800)
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = when {
-                                daysSinceDryingStart >= optimalDryingDays -> "Fertig"
-                                else -> "Tag $daysSinceDryingStart"
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                daysSinceDryingStart >= optimalDryingDays -> Color(0xFF4CAF50)
-                                else -> Color(0xFFFF9800)
-                            }
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Harvest Information
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Erntedatum",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
+                // Progress summary
+                Column(horizontalAlignment = Alignment.End) {
+                    val progress = (daysSinceDryingStart.toFloat() / optimalDryingDays.toFloat()).coerceIn(0f, 1f)
                     Text(
-                        text = harvestDateFormatted,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = "Tag $daysSinceDryingStart / $optimalDryingDays",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        color = if (progress >= 1f) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.width(140.dp)
                     )
                 }
             }
             
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Summary: Start · Tag N/M · Ende
+            Text(
+                text = "Start: $dryingStartFormatted · Tag $daysSinceDryingStart/$optimalDryingDays · Ende: $curingDateFormatted",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
             Spacer(modifier = Modifier.height(12.dp))
+
+            if (daysSinceDryingStart >= optimalDryingDays) {
+                // CTA: Move to fermentation once drying is complete
+                Button(
+                    onClick = { showFermentationDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                ) {
+                    Icon(imageVector = Icons.Filled.Science, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Zur Fermentierung")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            
+            // Key dates overview
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DateInfo(icon = Icons.Filled.CalendarMonth, label = "Ernte", value = harvestDateFormatted)
+                DateInfo(icon = Icons.Filled.CalendarMonth, label = "Start", value = dryingStartFormatted)
+                DateInfo(icon = Icons.Filled.CalendarMonth, label = "Ende", value = curingDateFormatted)
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Quick temperature/humidity entry
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "Schnell-Erfassung",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = tempText,
+                            onValueChange = { tempText = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("°C") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = humidityText,
+                            onValueChange = { humidityText = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("%") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Button(
+                            onClick = {
+                                if (tempText.isNotBlank()) {
+                                    val entry = PlantEntry(type = EntryType.TEMPERATURE, value = tempText)
+                                    GrowDataStore.addEntryToPlant(plant.id, entry)
+                                }
+                                if (humidityText.isNotBlank()) {
+                                    val entry = PlantEntry(type = EntryType.HUMIDITY, value = humidityText)
+                                    GrowDataStore.addEntryToPlant(plant.id, entry)
+                                }
+                                tempText = ""
+                                humidityText = ""
+                            },
+                            enabled = tempText.isNotBlank() || humidityText.isNotBlank()
+                        ) {
+                            Text("Eintragen")
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Presets
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("18","19","20").forEach { t ->
+                            AssistChip(onClick = { tempText = t }, label = { Text("${t}°C") }, leadingIcon = { Icon(Icons.Filled.Thermostat, contentDescription = null) })
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("45","50","55").forEach { h ->
+                            AssistChip(onClick = { humidityText = h }, label = { Text("${h}%") }, leadingIcon = { Icon(Icons.Filled.WaterDrop, contentDescription = null) })
+                        }
+                    }
+                }
+            }
+
+            // Offer quick undo within 24h
+            if (canUndoDrying) {
+                OutlinedButton(onClick = {
+                    val updated = plant.copy(isDrying = false, dryingStartDate = null)
+                    com.growtracker.app.ui.grow.GrowDataStore.updatePlant(updated)
+                }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Trocknung rückgängig (24h)")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             
             // Plant Information Grid
             Column(
@@ -349,47 +415,38 @@ fun DryingPlantCard(
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Optimale Trocknungsbedingungen",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(text = "Optimale Trocknungsbedingungen", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "🌡️ $optimalTemperature",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "💧 $optimalHumidity",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "🕐 $optimalDryingDays Tage",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AssistChip(onClick = {}, label = { Text(optimalTemperature) }, leadingIcon = { Icon(Icons.Filled.Thermostat, contentDescription = null) }, colors = AssistChipDefaults.assistChipColors())
+                        AssistChip(onClick = {}, label = { Text(optimalHumidity) }, leadingIcon = { Icon(Icons.Filled.WaterDrop, contentDescription = null) })
+                        AssistChip(onClick = {}, label = { Text("$optimalDryingDays Tage") }, leadingIcon = { Icon(Icons.Filled.Schedule, contentDescription = null) })
                     }
                 }
             }
         }
+    }
+
+    // Inline method picker and state transition
+    if (showFermentationDialog) {
+        FermentationDialog(
+            plant = plant,
+            onDismiss = { showFermentationDialog = false },
+            onConfirm = { fermentationMethod ->
+                val updated = plant.copy(
+                    isDrying = false,
+                    isFermenting = true,
+                    fermentationStartDate = System.currentTimeMillis(),
+                    fermentationMethod = fermentationMethod
+                )
+                GrowDataStore.updatePlant(updated)
+                showFermentationDialog = false
+            }
+        )
     }
 }
 
@@ -445,6 +502,7 @@ fun DryingPlantDetailDialog(
     val daysSinceDryingStart = ((currentTime - dryingStartDate) / (1000 * 60 * 60 * 24)).toInt()
     val optimalDryingDays = 7
     val estimatedCuringStartDate = dryingStartDate + (optimalDryingDays * 24 * 60 * 60 * 1000)
+    val canUndoDrying = (System.currentTimeMillis() - dryingStartDate) <= 24L * 60L * 60L * 1000L
     
     // Format dates
     val harvestDateFormatted = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(harvestDate)
@@ -514,7 +572,7 @@ fun DryingPlantDetailDialog(
                         contentPadding = PaddingValues(horizontal = 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(plant.photos) { photo ->
+                        items(plant.photos, key = { it.id }) { photo ->
                             Card(
                                 modifier = Modifier
                                     .size(120.dp)
@@ -579,6 +637,20 @@ fun DryingPlantDetailDialog(
                     modifier = Modifier.padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    if (canUndoDrying) {
+                        OutlinedButton(
+                            onClick = {
+                                val updated = plant.copy(isDrying = false, dryingStartDate = null)
+                                onUpdatePlant(updated)
+                                onDismiss()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Trocknung rückgängig (24h)")
+                        }
+                    }
                     Button(
                         onClick = { showAddPhotoDialog = true },
                         modifier = Modifier.fillMaxWidth(),
@@ -991,5 +1063,18 @@ fun FermentationMethodCard(
                 modifier = Modifier.size(24.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun DateInfo(icon: ImageVector, label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(text = value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
     }
 }

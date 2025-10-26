@@ -80,7 +80,28 @@ fun PlantDetailScreen(plant: Plant, onBack: () -> Unit = {}) {
     ) { inner ->
         LazyColumn(modifier = Modifier.padding(inner).fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { PlantInfoCard(plant = plant, isSmallScreen = isSmallScreen) }
-            item { SimpleCalendarView(selectedDate = selectedDate, onSelectDate = { selectedDate = it }, isSmallScreen = isSmallScreen) }
+            item {
+                // Compute approximate harvest date based on first bloom day and expected bloom duration
+                val estHarvestMidnight = remember(plant.floweringStartDate, plant.type) {
+                    plant.floweringStartDate?.let { start ->
+                        val days = expectedBloomDays(plant)
+                        val cal = java.util.Calendar.getInstance().apply {
+                            timeInMillis = start + days.toLong() * 24L * 60 * 60 * 1000
+                            set(java.util.Calendar.HOUR_OF_DAY, 0)
+                            set(java.util.Calendar.MINUTE, 0)
+                            set(java.util.Calendar.SECOND, 0)
+                            set(java.util.Calendar.MILLISECOND, 0)
+                        }
+                        cal.timeInMillis
+                    }
+                }
+                SimpleCalendarView(
+                    selectedDate = selectedDate,
+                    onSelectDate = { selectedDate = it },
+                    estimatedHarvestMidnight = estHarvestMidnight,
+                    isSmallScreen = isSmallScreen
+                )
+            }
             item { EntriesSection(entries = plant.entries ?: emptyList(), plantId = plant.id, preferredFertilizerManufacturer = plant.preferredFertilizerManufacturer, selectedDate = selectedDate, isSmallScreen = isSmallScreen) }
         }
     }
@@ -148,6 +169,9 @@ private fun PlantInfoCard(plant: Plant, isSmallScreen: Boolean = false) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Precompute remaining days to reuse below
+            val remainingDays = daysToHarvest(plant)
+
             // Chips row with THC, CBD, pot size, optional seedling label, germ day, bloom day
             FlowRow(
                 modifier = Modifier.fillMaxWidth(), 
@@ -186,9 +210,20 @@ private fun PlantInfoCard(plant: Plant, isSmallScreen: Boolean = false) {
                 }
 
                 // Estimated remaining days to harvest if in bloom and no harvest set
-                val remaining = daysToHarvest(plant)
-                if (remaining != null && remaining > 0) {
-                    ChipSmall(label = getString(com.growtracker.app.ui.language.GrowStrings.chip_days_to_harvest), value = remaining.toString())
+                if (remainingDays != null && remainingDays > 0) {
+                    val unit = getString(com.growtracker.app.ui.language.GrowStrings.unit_days)
+                    ChipSmall(label = getString(com.growtracker.app.ui.language.GrowStrings.chip_days_to_harvest), value = "$remainingDays $unit")
+                }
+            }
+
+            // Action when harvest ETA has passed and plant is not yet in drying
+            if ((remainingDays == null || remainingDays <= 0) && !plant.isDrying) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
+                    val updated = plant.copy(isDrying = true, dryingStartDate = System.currentTimeMillis())
+                    GrowDataStore.updatePlant(updated)
+                }) {
+                    Text(getString(com.growtracker.app.ui.language.GrowStrings.to_drying_button))
                 }
             }
         }
@@ -196,7 +231,12 @@ private fun PlantInfoCard(plant: Plant, isSmallScreen: Boolean = false) {
 }
 
 @Composable
-private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) -> Unit = {}, isSmallScreen: Boolean = false) {
+private fun SimpleCalendarView(
+    selectedDate: Long? = null,
+    onSelectDate: (Long) -> Unit = {},
+    estimatedHarvestMidnight: Long? = null,
+    isSmallScreen: Boolean = false
+) {
     // Expanded = month grid (30+ days). Collapsed = week row.
     var expanded by remember { mutableStateOf(false) }
 
@@ -293,6 +333,15 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
                                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                                 Text(dayNum.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
                                                 if (isToday && !isSelected) Text("heute", style = MaterialTheme.typography.labelSmall)
+                                                // Harvest marker label
+                                                if (estimatedHarvestMidnight != null && estimatedHarvestMidnight == cellMillis) {
+                                                    Spacer(Modifier.height(2.dp))
+                                                    Text(
+                                                        text = getString(com.growtracker.app.ui.language.GrowStrings.harvest_label),
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.tertiary
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -327,6 +376,14 @@ private fun SimpleCalendarView(selectedDate: Long? = null, onSelectDate: (Long) 
                                 Text(weekday, style = MaterialTheme.typography.labelSmall, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(day, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                if (estimatedHarvestMidnight != null && estimatedHarvestMidnight == cMid) {
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = getString(com.growtracker.app.ui.language.GrowStrings.harvest_label),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
                             }
                         }
                     }

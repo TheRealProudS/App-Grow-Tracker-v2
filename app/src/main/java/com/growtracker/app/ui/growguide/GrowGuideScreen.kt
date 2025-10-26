@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.sp
 import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.language.getString
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 
 // Data class for guide categories
 data class GuideCategory(
@@ -36,6 +38,9 @@ data class GuideCategory(
     val bullets: List<String> = emptyList(),
     val tip: String? = null
 )
+
+// Stable filter keys independent from localized labels
+enum class GuideFilter { EQUIPMENT, LIGHT, CLIMATE, WATERING, FERTILIZER, PHASES, HARVEST, PESTS, ISSUES }
 
 @Composable
 fun ExpandableGuideCard(category: GuideCategory, modifier: Modifier = Modifier) {
@@ -82,7 +87,7 @@ fun ExpandableGuideCard(category: GuideCategory, modifier: Modifier = Modifier) 
 
                 Icon(
                         imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = if (isExpanded) "Zuklappen" else "Aufklappen",
+                    contentDescription = if (isExpanded) getString(Strings.a11y_collapse) else getString(Strings.a11y_expand),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -96,30 +101,58 @@ fun ExpandableGuideCard(category: GuideCategory, modifier: Modifier = Modifier) 
                 Column {
                     Spacer(modifier = Modifier.height(12.dp))
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Intro
-                    Text(
-                        text = category.intro,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 20.sp
-                    )
+                    // Intro as highlighted info callout
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        tonalElevation = 2.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = getString(Strings.a11y_info),
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = getString(Strings.guide_intro_label),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = category.intro,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    lineHeight = 18.sp
+                                )
+                            }
+                        }
+                    }
 
                     // Bullets
                     if (category.bullets.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             category.bullets.forEach { b ->
                                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                                     Icon(
-                                        imageVector = Icons.Filled.Circle,
+                                        imageVector = Icons.Filled.CheckCircle,
                                         contentDescription = null,
-                                        modifier = Modifier.size(8.dp).padding(top = 6.dp),
+                                        modifier = Modifier.size(18.dp).padding(top = 2.dp),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = b, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = b,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        lineHeight = 20.sp
+                                    )
                                 }
                             }
                         }
@@ -130,16 +163,16 @@ fun ExpandableGuideCard(category: GuideCategory, modifier: Modifier = Modifier) 
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                            color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Filled.Lightbulb, contentDescription = "Tipp", tint = MaterialTheme.colorScheme.primary)
+                                Icon(imageVector = Icons.Filled.Lightbulb, contentDescription = getString(Strings.a11y_tip), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
-                                    Text(text = "Praxis‑Tipp", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
+                                    Text(text = getString(Strings.guide_tip_label), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onPrimaryContainer)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(text = t, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(text = t, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                 }
                             }
                         }
@@ -150,13 +183,28 @@ fun ExpandableGuideCard(category: GuideCategory, modifier: Modifier = Modifier) 
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun GrowGuideScreen(
     modifier: Modifier = Modifier,
     languageManager: LanguageManager,
     onNavigateBack: () -> Unit
 ) {
+    var query by remember { mutableStateOf("") }
+    // Localized labels rendered from stable keys
+    val suggestedFilters = listOf(
+        GuideFilter.EQUIPMENT to getString(Strings.guide_filter_equipment, languageManager),
+        GuideFilter.LIGHT to getString(Strings.guide_filter_light, languageManager),
+        GuideFilter.CLIMATE to getString(Strings.guide_filter_climate, languageManager),
+        GuideFilter.WATERING to getString(Strings.guide_filter_watering, languageManager),
+        GuideFilter.FERTILIZER to getString(Strings.guide_filter_fertilizer, languageManager),
+        GuideFilter.PHASES to getString(Strings.guide_filter_phases, languageManager),
+        GuideFilter.HARVEST to getString(Strings.guide_filter_harvest, languageManager),
+        GuideFilter.PESTS to getString(Strings.guide_filter_pests, languageManager),
+        GuideFilter.ISSUES to getString(Strings.guide_filter_issues, languageManager)
+    )
+    var activeFilter by remember { mutableStateOf<GuideFilter?>(null) }
+
     Column(
         modifier = modifier.fillMaxSize()
     ) {
@@ -172,18 +220,46 @@ fun GrowGuideScreen(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Zurück"
+                        contentDescription = getString(Strings.a11y_back, languageManager)
                     )
                 }
             }
 
         )
 
+        // Search + Filters
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                placeholder = { Text(getString(Strings.guide_search_placeholder, languageManager)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(8.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                suggestedFilters.forEach { (key, label) ->
+                    AssistChip(
+                        onClick = {
+                            activeFilter = if (activeFilter == key) null else key
+                        },
+                        label = { Text(label) },
+                        leadingIcon = if (activeFilter == key) ({ Icon(Icons.Filled.Check, contentDescription = null) }) else null,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = if (activeFilter == key) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+        }
+
         // Content
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             val guideCategories = listOf(
@@ -307,7 +383,25 @@ fun GrowGuideScreen(
                 )
             )
 
-            items(guideCategories) { category ->
+            // Filter
+            val filtered = guideCategories.filter { c ->
+                val matchQuery = query.isBlank() || listOf(c.title, c.intro) .plus(c.bullets).any { it.contains(query, ignoreCase = true) }
+                val matchFilter = when (activeFilter) {
+                    null -> true
+                    GuideFilter.EQUIPMENT -> c.title.contains("Ausstattung", true)
+                    GuideFilter.LIGHT -> c.title.contains("Licht", true) || c.title.contains("Beleuchtung", true)
+                    GuideFilter.CLIMATE -> c.title.contains("Klima", true) || c.title.contains("Belüftung", true)
+                    GuideFilter.WATERING -> c.title.contains("Gieß", true)
+                    GuideFilter.FERTILIZER -> c.title.contains("Dünger", true)
+                    GuideFilter.PHASES -> c.title.contains("Wachstum", true) || c.title.contains("Phasen", true)
+                    GuideFilter.HARVEST -> c.title.contains("Ernte", true)
+                    GuideFilter.PESTS -> c.title.contains("Schädl", true)
+                    GuideFilter.ISSUES -> c.title.contains("Problem", true)
+                }
+                matchQuery && matchFilter
+            }
+
+            items(filtered) { category ->
                 ExpandableGuideCard(category = category)
             }
 

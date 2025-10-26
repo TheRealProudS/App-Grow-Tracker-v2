@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Disallow cleartext for all builds -->
+    <base-config cleartextTrafficPermitted="false">
+        <!-- Only trust system CAs; do not trust user-added CAs to reduce MITM risk -->
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <!-- Optional: allow cleartext only on debug for local testing
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+            <certificates src="system" />
+        </trust-anchors>
+    </debug-overrides> -->
+</network-security-config>

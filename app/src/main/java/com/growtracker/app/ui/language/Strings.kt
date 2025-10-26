@@ -234,10 +234,10 @@ object Strings {
     // Overview Buttons
     val overview_grow_guide: Map<Language, String> = mapOf(
         Language.GERMAN to "Guide",
-        Language.ENGLISH to "Grow Guide",
-        Language.SPANISH to "Guía de Cultivo",
-        Language.FRENCH to "Guide de Culture",
-        Language.ITALIAN to "Guida alla Coltivazione"
+        Language.ENGLISH to "Guide",
+        Language.SPANISH to "Guía",
+        Language.FRENCH to "Guide",
+        Language.ITALIAN to "Guida"
     )
     val discord_join: Map<Language, String> = mapOf(
         Language.GERMAN to "Tritt unserem Discord bei",
@@ -606,6 +606,130 @@ object Strings {
         Language.FRENCH to "Inactive",
         Language.ITALIAN to "Inattiva"
     )
+
+    // Grow Guide – UI labels and filters
+    val guide_intro_label: Map<Language, String> = mapOf(
+        Language.GERMAN to "Kurzinfo",
+        Language.ENGLISH to "Quick info",
+        Language.SPANISH to "Info breve",
+        Language.FRENCH to "Info rapide",
+        Language.ITALIAN to "Info rapida"
+    )
+    val guide_tip_label: Map<Language, String> = mapOf(
+        Language.GERMAN to "Praxis‑Tipp",
+        Language.ENGLISH to "Pro tip",
+        Language.SPANISH to "Consejo práctico",
+        Language.FRENCH to "Astuce pratique",
+        Language.ITALIAN to "Suggerimento pratico"
+    )
+    val guide_search_placeholder: Map<Language, String> = mapOf(
+        Language.GERMAN to "Suche im Guide…",
+        Language.ENGLISH to "Search the guide…",
+        Language.SPANISH to "Buscar en la guía…",
+        Language.FRENCH to "Rechercher dans le guide…",
+        Language.ITALIAN to "Cerca nella guida…"
+    )
+    // Filter chip labels
+    val guide_filter_equipment: Map<Language, String> = mapOf(
+        Language.GERMAN to "Ausstattung",
+        Language.ENGLISH to "Equipment",
+        Language.SPANISH to "Equipo",
+        Language.FRENCH to "Équipement",
+        Language.ITALIAN to "Attrezzatura"
+    )
+    val guide_filter_light: Map<Language, String> = mapOf(
+        Language.GERMAN to "Licht",
+        Language.ENGLISH to "Light",
+        Language.SPANISH to "Luz",
+        Language.FRENCH to "Lumière",
+        Language.ITALIAN to "Luce"
+    )
+    val guide_filter_climate: Map<Language, String> = mapOf(
+        Language.GERMAN to "Klima",
+        Language.ENGLISH to "Climate",
+        Language.SPANISH to "Clima",
+        Language.FRENCH to "Climat",
+        Language.ITALIAN to "Clima"
+    )
+    val guide_filter_watering: Map<Language, String> = mapOf(
+        Language.GERMAN to "Gießen",
+        Language.ENGLISH to "Watering",
+        Language.SPANISH to "Riego",
+        Language.FRENCH to "Arrosage",
+        Language.ITALIAN to "Irrigazione"
+    )
+    val guide_filter_fertilizer: Map<Language, String> = mapOf(
+        Language.GERMAN to "Dünger",
+        Language.ENGLISH to "Fertilizer",
+        Language.SPANISH to "Fertilizante",
+        Language.FRENCH to "Engrais",
+        Language.ITALIAN to "Fertilizzante"
+    )
+    val guide_filter_phases: Map<Language, String> = mapOf(
+        Language.GERMAN to "Phasen",
+        Language.ENGLISH to "Phases",
+        Language.SPANISH to "Fases",
+        Language.FRENCH to "Phases",
+        Language.ITALIAN to "Fasi"
+    )
+    val guide_filter_harvest: Map<Language, String> = mapOf(
+        Language.GERMAN to "Ernte",
+        Language.ENGLISH to "Harvest",
+        Language.SPANISH to "Cosecha",
+        Language.FRENCH to "Récolte",
+        Language.ITALIAN to "Raccolto"
+    )
+    val guide_filter_pests: Map<Language, String> = mapOf(
+        Language.GERMAN to "Schädlinge",
+        Language.ENGLISH to "Pests",
+        Language.SPANISH to "Plagas",
+        Language.FRENCH to "Ravageurs",
+        Language.ITALIAN to "Parassiti"
+    )
+    val guide_filter_issues: Map<Language, String> = mapOf(
+        Language.GERMAN to "Probleme",
+        Language.ENGLISH to "Issues",
+        Language.SPANISH to "Problemas",
+        Language.FRENCH to "Problèmes",
+        Language.ITALIAN to "Problemi"
+    )
+
+    // Accessibility / actions
+    val a11y_back: Map<Language, String> = mapOf(
+        Language.GERMAN to "Zurück",
+        Language.ENGLISH to "Back",
+        Language.SPANISH to "Atrás",
+        Language.FRENCH to "Retour",
+        Language.ITALIAN to "Indietro"
+    )
+    val a11y_expand: Map<Language, String> = mapOf(
+        Language.GERMAN to "Aufklappen",
+        Language.ENGLISH to "Expand",
+        Language.SPANISH to "Expandir",
+        Language.FRENCH to "Développer",
+        Language.ITALIAN to "Espandi"
+    )
+    val a11y_collapse: Map<Language, String> = mapOf(
+        Language.GERMAN to "Zuklappen",
+        Language.ENGLISH to "Collapse",
+        Language.SPANISH to "Contraer",
+        Language.FRENCH to "Réduire",
+        Language.ITALIAN to "Comprimi"
+    )
+    val a11y_tip: Map<Language, String> = mapOf(
+        Language.GERMAN to "Tipp",
+        Language.ENGLISH to "Tip",
+        Language.SPANISH to "Consejo",
+        Language.FRENCH to "Astuce",
+        Language.ITALIAN to "Suggerimento"
+    )
+    val a11y_info: Map<Language, String> = mapOf(
+        Language.GERMAN to "Info",
+        Language.ENGLISH to "Info",
+        Language.SPANISH to "Info",
+        Language.FRENCH to "Info",
+        Language.ITALIAN to "Info"
+    )
 }
 
 @Composable
@@ -684,6 +808,22 @@ object GrowStrings {
         Language.ITALIAN to "giorni al raccolto"
     )
 
+    // Units and actions
+    val unit_days: Map<Language, String> = mapOf(
+        Language.GERMAN to "Tage",
+        Language.ENGLISH to "days",
+        Language.SPANISH to "días",
+        Language.FRENCH to "jours",
+        Language.ITALIAN to "giorni"
+    )
+    val to_drying_button: Map<Language, String> = mapOf(
+        Language.GERMAN to "Zur Trocknung",
+        Language.ENGLISH to "Start drying",
+        Language.SPANISH to "Iniciar secado",
+        Language.FRENCH to "Commencer le séchage",
+        Language.ITALIAN to "Avvia essiccazione"
+    )
+
     // Plant detail – chips and sections
     val chip_pot: Map<Language, String> = mapOf(
         Language.GERMAN to "Topf",
@@ -719,6 +859,13 @@ object GrowStrings {
         Language.SPANISH to "Entradas",
         Language.FRENCH to "Entrées",
         Language.ITALIAN to "Registrazioni"
+    )
+    val harvest_label: Map<Language, String> = mapOf(
+        Language.GERMAN to "Ernte",
+        Language.ENGLISH to "Harvest",
+        Language.SPANISH to "Cosecha",
+        Language.FRENCH to "Récolte",
+        Language.ITALIAN to "Raccolto"
     )
     val no_entries_today: Map<Language, String> = mapOf(
         Language.GERMAN to "Keine Einträge für diesen Tag",

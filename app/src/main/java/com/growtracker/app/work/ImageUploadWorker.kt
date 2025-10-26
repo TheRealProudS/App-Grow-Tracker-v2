@@ -22,6 +22,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.TimeUnit
+import com.growtracker.app.security.PlayIntegrityClient
 
 class ImageUploadWorker(
     appContext: Context,
@@ -33,6 +34,10 @@ class ImageUploadWorker(
     private val consentRepo by lazy { DataUploadConsentRepository(appContext) }
 
     override suspend fun doWork(): Result {
+        // Verify app signature if configured; bail out if mismatch
+        if (!com.growtracker.app.security.SecurityUtils.verifyAppSignature(applicationContext)) {
+            return Result.failure()
+        }
         val consent = consentRepo.consentFlow.first()
         if (!consent) return Result.success()
 
@@ -76,7 +81,11 @@ class ImageUploadWorker(
                 put("createdAt", entry.createdAt)
             }.toString().toRequestBody("application/json".toMediaTypeOrNull())
 
-            val resp = api.uploadImage(imagePart, metaJson)
+            // Fetch a Play Integrity token (best with server-provided nonce; here we use a random placeholder)
+            val nonce = PlayIntegrityClient.generateNonce()
+            val integrityToken = PlayIntegrityClient.requestTokenOrNull(applicationContext, nonce)
+
+            val resp = api.uploadImage(integrityToken, imagePart, metaJson)
             resp.isSuccessful
         } catch (e: Exception) {
             false

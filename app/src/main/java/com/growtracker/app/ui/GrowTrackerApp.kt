@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -48,8 +49,11 @@ import com.growtracker.app.ui.statistics.PlantStatisticsScreen
 import com.growtracker.app.ui.settings.SettingsScreen
 import com.growtracker.app.ui.theme.ThemeManager
 import com.growtracker.app.ui.language.LanguageManager
+import com.growtracker.app.ui.drying.DryingScreen
 import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.language.getString
+import com.growtracker.app.ui.fermentation.FermentationScreen
+import com.growtracker.app.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,12 +135,21 @@ fun GrowTrackerApp(
                                 .padding(vertical = 8.dp),
                             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = destination.icon,
-                                contentDescription = destination.getTitle(languageManager),
-                                modifier = Modifier.size(24.dp),
-                                tint = iconColor
-                            )
+                            if (destination.iconRes != null) {
+                                Icon(
+                                    painter = painterResource(id = destination.iconRes),
+                                    contentDescription = destination.getTitle(languageManager),
+                                    modifier = Modifier.size(24.dp),
+                                    tint = iconColor
+                                )
+                            } else if (destination.icon != null) {
+                                Icon(
+                                    imageVector = destination.icon,
+                                    contentDescription = destination.getTitle(languageManager),
+                                    modifier = Modifier.size(24.dp),
+                                    tint = iconColor
+                                )
+                            }
                             
                             Spacer(modifier = Modifier.height(4.dp))
                             
@@ -163,7 +176,9 @@ fun GrowTrackerApp(
                     languageManager = languageManager,
                     onOpenGrowGuide = { navController.navigate("growguide") },
                     onOpenStatistics = { navController.navigate("plant-stats") },
-                    onOpenLeafSense = { navController.navigate("leafsense") }
+                    onOpenLeafSense = { navController.navigate("leafsense") },
+                    onOpenDrying = { navController.navigate("drying") },
+                    onOpenFermentation = { navController.navigate("fermentation") }
                 )
             }
             composable(TopLevelDestination.GROW.route) {
@@ -179,6 +194,12 @@ fun GrowTrackerApp(
             }
             composable("leafsense") {
                 LeafSenseScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable("drying") {
+                DryingScreen(languageManager = languageManager, onNavigateUp = { navController.popBackStack() })
+            }
+            composable("fermentation") {
+                FermentationScreen(languageManager = languageManager, onNavigateUp = { navController.popBackStack() })
             }
             composable("grow/plant/{plantId}") { backStackEntry ->
                 val plantId = backStackEntry.arguments?.getString("plantId") ?: return@composable
@@ -211,7 +232,8 @@ fun GrowTrackerApp(
 
 enum class TopLevelDestination(
     val route: String,
-    val icon: ImageVector,
+    val icon: ImageVector? = null,
+    val iconRes: Int? = null,
     private val titleStringMap: Map<com.growtracker.app.ui.language.Language, String>
 ) {
     OVERVIEW(

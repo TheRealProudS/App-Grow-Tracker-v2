@@ -434,6 +434,8 @@ fun LeafSenseScreen(onNavigateBack: () -> Unit) {
                         showFps = showFps,
                         stage0Enabled = (analyzerType == AnalyzerType.TFLITE && tfliteAnalyzer.pipelineMode == PipelineMode.TWO_STAGE && tfliteAnalyzer.loadedStage0Name() != null),
                         stage0Threshold = tfliteAnalyzer.stage0AcceptThreshold,
+                        preferNNAPI = tfliteAnalyzer.preferNNAPI,
+                        threadSetting = tfliteAnalyzer.numThreadsOverride ?: 0,
                         onChangeThreshold = { newVal ->
                             confidenceThreshold = newVal
                             if (results.isNotEmpty()) recommendations = LeafSenseRecommendations.generate(results, newVal)
@@ -452,6 +454,38 @@ fun LeafSenseScreen(onNavigateBack: () -> Unit) {
                                     val activeAnalyzer = when (analyzerType) { AnalyzerType.DUMMY -> dummyAnalyzer; AnalyzerType.TFLITE -> tfliteAnalyzer }
                                     results = activeAnalyzer.analyze(img)
                                     recommendations = LeafSenseRecommendations.generate(results, confidenceThreshold)
+                                    isAnalyzing = false
+                                }
+                            }
+                        },
+                        onToggleNNAPI = { prefer ->
+                            if (analyzerType == AnalyzerType.TFLITE) {
+                                tfliteAnalyzer.preferNNAPI = prefer
+                                // Recreate interpreters with new delegate preference
+                                analysisScope.launch {
+                                    isAnalyzing = true
+                                    tfliteAnalyzer.reloadModels(lastBitmap)
+                                    // Re-run on current image if available
+                                    lastBitmap?.let { bmp ->
+                                        val img = LeafSenseImage.BitmapRef(bmp)
+                                        results = tfliteAnalyzer.analyze(img)
+                                        recommendations = LeafSenseRecommendations.generate(results, confidenceThreshold)
+                                    }
+                                    isAnalyzing = false
+                                }
+                            }
+                        },
+                        onChangeThreads = { value ->
+                            if (analyzerType == AnalyzerType.TFLITE) {
+                                tfliteAnalyzer.numThreadsOverride = value.takeIf { it in 1..4 }
+                                analysisScope.launch {
+                                    isAnalyzing = true
+                                    tfliteAnalyzer.reloadModels(lastBitmap)
+                                    lastBitmap?.let { bmp ->
+                                        val img = LeafSenseImage.BitmapRef(bmp)
+                                        results = tfliteAnalyzer.analyze(img)
+                                        recommendations = LeafSenseRecommendations.generate(results, confidenceThreshold)
+                                    }
                                     isAnalyzing = false
                                 }
                             }
@@ -712,9 +746,13 @@ private fun AdvancedSettingsCard(
     showFps: Boolean,
     stage0Enabled: Boolean,
     stage0Threshold: Float,
+    preferNNAPI: Boolean,
+    threadSetting: Int, // 0 = Auto, 1..4 explicit
     onChangeThreshold: (Float) -> Unit,
     onToggleFps: (Boolean) -> Unit,
     onChangeStage0Threshold: (Float) -> Unit,
+    onToggleNNAPI: (Boolean) -> Unit,
+    onChangeThreads: (Int) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     ElevatedCard(Modifier.fillMaxWidth()) {
@@ -750,6 +788,26 @@ private fun AdvancedSettingsCard(
                             )
                             Text("Aktuell: ${(stage0Threshold*100).toInt()}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.weight(1f)) {
+                            Text("NNAPI bevorzugen", style = MaterialTheme.typography.labelSmall)
+                            Text("Verwendet verfügbare NNAPI-Beschleunigung, sonst CPU.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = preferNNAPI, onCheckedChange = { onToggleNNAPI(it) })
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Threads (0=Auto)", style = MaterialTheme.typography.labelSmall)
+                        var sliderVal by remember(threadSetting) { mutableStateOf(threadSetting.coerceIn(0,4).toFloat()) }
+                        Slider(
+                            value = sliderVal,
+                            onValueChange = { v -> sliderVal = v },
+                            onValueChangeFinished = { onChangeThreads(sliderVal.toInt()) },
+                            valueRange = 0f..4f,
+                            steps = 3
+                        )
+                        val label = if (sliderVal.toInt() == 0) "Auto" else sliderVal.toInt().toString()
+                        Text("Aktuell: $label", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.weight(1f)) {
@@ -980,7 +1038,7 @@ private fun CameraCaptureSection(
                             cameraProviderFuture.addListener({
                                 val provider = cameraProviderFuture.get()
                                 cameraProviderState.value = provider
-                                Log.d("LeafSense", "CameraProvider ready - initial bind (liveMode=$liveMode)")
+                                if (com.growtracker.app.BuildConfig.DEBUG) Log.d("LeafSense", "CameraProvider ready - initial bind (liveMode=$liveMode)")
                                 val preview = Preview.Builder().build().also { it.setSurfaceProvider(surfaceProvider) }
                                 fun bind() {
                                     try {
@@ -1062,7 +1120,7 @@ private fun CameraCaptureSection(
                     // Rebind when liveMode or camera selector changes
                     LaunchedEffect(liveMode, cameraSelector) {
                         cameraProviderState.value?.let { provider ->
-                            Log.d("LeafSense", "Rebinding camera (liveMode=$liveMode, selector=${if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) "BACK" else "FRONT"})")
+                            if (com.growtracker.app.BuildConfig.DEBUG) Log.d("LeafSense", "Rebinding camera (liveMode=$liveMode, selector=${if (cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) "BACK" else "FRONT"})")
                             try {
                                 provider.unbindAll()
                                 val preview = Preview.Builder().build().also { pv ->
@@ -1236,7 +1294,7 @@ private fun CameraCaptureSection(
                                     try {
                                         val bmp = imageProxyToBitmapScaled(image, maxDimension = 960)
                                         image.close()
-                                        Log.d("LeafSense", "Captured frame ${bmp.width}x${bmp.height}")
+                                        if (com.growtracker.app.BuildConfig.DEBUG) Log.d("LeafSense", "Captured frame ${bmp.width}x${bmp.height}")
                                         onCaptured(bmp)
                                     } catch (e: Exception) {
                                         captureError = e

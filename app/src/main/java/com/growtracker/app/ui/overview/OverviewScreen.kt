@@ -50,7 +50,9 @@ fun OverviewScreen(
     languageManager: LanguageManager,
     onOpenGrowGuide: () -> Unit = {},
     onOpenStatistics: () -> Unit = {},
-    onOpenLeafSense: () -> Unit = {}
+    onOpenLeafSense: () -> Unit = {},
+    onOpenDrying: () -> Unit = {},
+    onOpenFermentation: () -> Unit = {}
 ) {
     var showGallery by remember { mutableStateOf(false) }
     Box(
@@ -90,11 +92,12 @@ fun OverviewScreen(
                 // Guide Card - kompakter
                     FeatureCard(
                     title = getString(Strings.overview_grow_guide, languageManager),
-                    description = "Expertenwissen für erfolgreichen Cannabis-Anbau",
+                    description = "",
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                     backgroundColor = Color(0xFF4CAF50),
                     onClick = onOpenGrowGuide,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    showRightArrow = false
                 )
                 
                 // Zweite Reihe - kompakter
@@ -112,12 +115,13 @@ fun OverviewScreen(
                         isCompact = true
                     )
                     
+                        // Temporarily hide LeafSense and show Drying instead
                         FeatureCard(
-                        title = "LeafSense KI",
-                        description = "Analyse",
-                            icon = Icons.Filled.Nature,
+                        title = "Trocknung",
+                        description = "",
+                            icon = Icons.Filled.Air,
                         backgroundColor = Color(0xFF7CB342),
-                        onClick = onOpenLeafSense,
+                        onClick = onOpenDrying,
                         modifier = Modifier.weight(1f),
                         isCompact = true
                     )
@@ -143,7 +147,7 @@ fun OverviewScreen(
                         description = "",
                 icon = Icons.Filled.LocalBar,
                         backgroundColor = Color(0xFF795548),
-                        onClick = {},
+                        onClick = onOpenFermentation,
                         modifier = Modifier.weight(1f),
                         isCompact = true
                     )
@@ -161,7 +165,7 @@ fun OverviewScreen(
 fun GalleryDialog(onClose: () -> Unit) {
     // collect all photos from GrowDataStore
     val plants = remember { GrowDataStore.plants }
-    val photos = remember(plants) { plants.flatMap { it.photos } }
+    val photos by remember(plants) { derivedStateOf { plants.flatMap { it.photos } } }
     var fullScreenPath by remember { mutableStateOf<String?>(null) }
 
     Dialog(onDismissRequest = onClose) {
@@ -176,7 +180,7 @@ fun GalleryDialog(onClose: () -> Unit) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Keine Bilder vorhanden") }
                 } else {
                     LazyVerticalGrid(columns = GridCells.Fixed(3), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(4.dp)) {
-                        items(photos) { p ->
+                        items(photos, key = { it.id }) { p ->
                             val bmp = runCatching { android.graphics.BitmapFactory.decodeFile(p.uri) }.getOrNull()
                             if (bmp != null) {
                                 Image(bitmap = bmp.asImageBitmap(), contentDescription = p.description, modifier = Modifier.size(120.dp).padding(4.dp).clickable { fullScreenPath = p.uri }, contentScale = ContentScale.Crop)
@@ -210,7 +214,8 @@ fun FeatureCard(
     backgroundColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isCompact: Boolean = false
+    isCompact: Boolean = false,
+    showRightArrow: Boolean = true
 ) {
     Card(
         onClick = onClick,
@@ -314,12 +319,14 @@ fun FeatureCard(
                         }
                     }
                     
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Öffnen",
-                        modifier = Modifier.size(20.dp),
-                        tint = Color.White.copy(alpha = 0.8f)
-                    )
+                    if (showRightArrow) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Öffnen",
+                            modifier = Modifier.size(20.dp),
+                            tint = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
         }

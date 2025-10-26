@@ -29,6 +29,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.platform.LocalContext
 import com.growtracker.app.ui.language.LanguageManager
+import com.growtracker.app.ui.grow.GrowDataStore
+import com.growtracker.app.data.FermentationMethod
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,14 +41,8 @@ fun FermentationScreen(
     onPlantClick: (Plant) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val dataManager: GrowDataManager = remember { GrowDataManager(context) }
-    
-    // Get all plants that are currently fermenting
-    val fermentingPlants = remember(dataManager) {
-        dataManager.loadGrowboxes()
-            .flatMap { it.plants }
-            .filter { it.isFermenting }
-    }
+    // Observe fermenting plants from GrowDataStore so UI updates live
+    val fermentingPlants by remember { derivedStateOf { GrowDataStore.plants.filter { it.isFermenting } } }
     
     Scaffold(
         topBar = {
@@ -141,7 +137,7 @@ fun FermentationScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(fermentingPlants) { plant ->
+                    items(fermentingPlants, key = { it.id }) { plant ->
                         FermentingPlantCard(
                             plant = plant,
                             onClick = { onPlantClick(plant) }
@@ -163,10 +159,18 @@ fun FermentingPlantCard(
     val currentTime = System.currentTimeMillis()
     
     val daysSinceFermentationStart = ((currentTime - fermentationStartDate) / (1000 * 60 * 60 * 24)).toInt()
-    
-    // Optimal fermentation information based on cannabis cultivation knowledge
-    val optimalFermentationWeeks = 4 // 4-8 weeks is optimal for curing
-    val optimalFermentationDays = optimalFermentationWeeks * 7
+    // Allow undo within 24h
+    val canUndoFermentation = (currentTime - fermentationStartDate) <= 24L * 60L * 60L * 1000L
+
+    // Optimal fermentation duration by method (based on common guidance and internal defaults)
+    val optimalFermentationDays = when (plant.fermentationMethod) {
+        FermentationMethod.MASON_JAR -> 28 // ~4 Wochen
+        FermentationMethod.HUMIDOR -> 42 // ~6 Wochen
+        FermentationMethod.TERPLOC_BAG -> 21 // ~3 Wochen
+        FermentationMethod.VACUUM_CONTAINER -> 35 // ~5 Wochen
+        else -> 28
+    }
+    val optimalFermentationWeeks = optimalFermentationDays / 7
     val optimalTemperature = "18-21°C"
     val optimalHumidity = "55-65%"
     val remainingFermentationDays = maxOf(0, optimalFermentationDays - daysSinceFermentationStart)
@@ -291,6 +295,12 @@ fun FermentingPlantCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Empfohlen: ${optimalFermentationWeeks} Wochen (${optimalFermentationDays} Tage)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             
@@ -395,6 +405,25 @@ fun FermentingPlantCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                }
+            }
+
+            // Offer quick undo within 24h of starting fermentation
+            if (canUndoFermentation) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        val reverted = plant.copy(
+                            isFermenting = false,
+                            isDrying = true
+                        )
+                        GrowDataStore.updatePlant(reverted)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Fermentierung rückgängig (24h)")
                 }
             }
         }
@@ -522,7 +551,7 @@ fun FermentationPlantDetailDialog(
                         contentPadding = PaddingValues(horizontal = 24.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(plant.photos) { photo ->
+                        items(plant.photos, key = { it.id }) { photo ->
                             Card(
                                 modifier = Modifier
                                     .size(120.dp)

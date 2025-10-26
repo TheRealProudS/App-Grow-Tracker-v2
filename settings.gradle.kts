@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "GrowTracker"
 include(":app")
+include(":baselineprofile")
+include(":macrobenchmark")

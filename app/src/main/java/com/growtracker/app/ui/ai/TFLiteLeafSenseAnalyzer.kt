@@ -46,6 +46,11 @@ class TFLiteLeafSenseAnalyzer(
     private var stage0InputSize: Int = 160
 
     private var interpreter: Interpreter? = null
+    // Reusable output buffer holder to avoid per-frame allocations
+    private var outputHolder: Array<FloatArray>? = null
+    // Runtime tuning
+    @Volatile var numThreadsOverride: Int? = null
+    @Volatile var preferNNAPI: Boolean = false
     private var labels: List<String> = emptyList()
     private val pixelArrayRef = java.util.concurrent.atomic.AtomicReference<IntArray?>()
     private val inputBufferRef = java.util.concurrent.atomic.AtomicReference<ByteBuffer?>()
@@ -54,6 +59,9 @@ class TFLiteLeafSenseAnalyzer(
     private val calibrationAssetName: String = "leafsense_calibration.json"
     @Volatile private var temperature: Float = 1.0f
     @Volatile private var loadAttempted: Boolean = false
+    // Security enforcement: block model usage if integrity fails
+    @Volatile var blockOnIntegrityMismatch: Boolean = true
+    @Volatile private var modelBlocked: Boolean = false
 
     private suspend fun ensureLoaded() = withContext(Dispatchers.IO) {
         if (interpreter != null) return@withContext
@@ -89,10 +97,42 @@ class TFLiteLeafSenseAnalyzer(
         for (candidate in ordered) {
             val mapped = runCatching { loadModel(candidate) }.getOrNull()
             if (mapped != null) {
-                interpreter = runCatching { Interpreter(mapped) }.getOrNull()
-                if (interpreter != null) {
-                    selectedModelName = candidate
-                    break
+                // Compute runtime hash and verify against manifest if provided
+                val hash = runCatching { sha256(mapped) }.getOrNull()
+                runtimeModelHash = hash
+                val expected = manifest?.model_sha256?.lowercase()
+                if (!expected.isNullOrBlank() && !hash.isNullOrBlank()) {
+                    if (hash == expected) {
+                        integrityVerified = true
+                        integrityMismatch = false
+                    } else {
+                        integrityVerified = false
+                        integrityMismatch = true
+                        if (blockOnIntegrityMismatch) {
+                            modelBlocked = true
+                            // Do not proceed with interpreter creation
+                            break
+                        }
+                    }
+                }
+                if (!modelBlocked) {
+                    // Build interpreter options with threads and optional NNAPI
+                    val opts = Interpreter.Options().apply {
+                        val cores = try { Runtime.getRuntime().availableProcessors() } catch (_: Throwable) { 2 }
+                        val threads = (numThreadsOverride ?: (cores - 1).coerceIn(1, 4))
+                        setNumThreads(threads)
+                        // XNNPACK is typically faster on CPU for float models; it's enabled by default on recent TF Lite,
+                        // but we enable it explicitly to be safe
+                        try { setUseXNNPACK(true) } catch (_: Throwable) { /* older versions may not support */ }
+                        if (preferNNAPI) {
+                            setUseNNAPI(true)
+                        }
+                    }
+                    interpreter = runCatching { Interpreter(mapped, opts) }.getOrNull()
+                    if (interpreter != null) {
+                        selectedModelName = candidate
+                        break
+                    }
                 }
             }
         }
@@ -101,7 +141,15 @@ class TFLiteLeafSenseAnalyzer(
         for (candidate in stage0ModelNames) {
             if (stage0Interpreter != null) break
             val mapped = runCatching { loadModel(candidate) }.getOrNull() ?: continue
-            stage0Interpreter = runCatching { Interpreter(mapped) }.getOrNull()
+            // Stage 0 with same threading preferences
+            val opts = Interpreter.Options().apply {
+                val cores = try { Runtime.getRuntime().availableProcessors() } catch (_: Throwable) { 2 }
+                val threads = (numThreadsOverride ?: (cores - 1).coerceIn(1, 4))
+                setNumThreads(threads)
+                try { setUseXNNPACK(true) } catch (_: Throwable) { }
+                if (preferNNAPI) setUseNNAPI(true)
+            }
+            stage0Interpreter = runCatching { Interpreter(mapped, opts) }.getOrNull()
             if (stage0Interpreter != null) {
                 selectedStage0Name = candidate
             }
@@ -206,7 +254,8 @@ class TFLiteLeafSenseAnalyzer(
         return KnowledgeRepository.query(text, topK)
     }
 
-    var enableEnqueueUploads: Boolean = true
+    // Offline by default: disable background upload enqueueing until online features are released
+    var enableEnqueueUploads: Boolean = false
     var uploadBaseUrl: String = "https://api.example.com" // TODO external config
 
     private suspend fun enqueuePredictionArtifact(top: LeafSenseResult, image: LeafSenseImage.BitmapRef) {
@@ -243,6 +292,11 @@ class TFLiteLeafSenseAnalyzer(
         val interp = interpreter
         val lbls = labels
         // If model not present yet, return placeholder to indicate fallback.
+        if (modelBlocked) {
+            return listOf(
+                LeafSenseResult("(Modell blockiert: Integrität)", 0.0f),
+            )
+        }
         if (interp == null || lbls.isEmpty()) {
             return listOf(
                 LeafSenseResult("(Model nicht geladen)", 0.0f),
@@ -267,12 +321,12 @@ class TFLiteLeafSenseAnalyzer(
         }
         val resized = resizeCenterCrop(bitmap, inputSize, inputSize)
         val inputBuffer = bitmapToFloatBuffer(resized, inputSize, inputSize, numChannels)
-        val output = Array(1) { FloatArray(lbls.size) }
+        val out = outputHolder?.takeIf { it.getOrNull(0)?.size == lbls.size } ?: Array(1) { FloatArray(lbls.size) }.also { outputHolder = it }
         withContext(Dispatchers.IO) {
-            interp.run(inputBuffer, output)
+            interp.run(inputBuffer, out)
         }
         // Apply temperature scaling if configured
-        val logits = output[0]
+        val logits = out[0]
         val scores = if (temperature != 1.0f) softmaxTemp(logits, temperature) else softmax(logits)
         // Build top-N (for now N = all, sorted)
         val results = lbls.indices.map { idx ->
@@ -466,6 +520,25 @@ class TFLiteLeafSenseAnalyzer(
             val output = Array(1) { FloatArray(labels.size) }
             withContext(Dispatchers.IO) { runCatching { interpreter?.run(inputBuffer, output) } }
         }
+    }
+    /**
+     * Recreate interpreters to apply updated runtime options (threads, delegates, etc.).
+     * Safe to call repeatedly; will close existing instances and reload lazily.
+     */
+    suspend fun reloadModels(sampleForWarmup: Bitmap? = null) {
+        withContext(Dispatchers.IO) {
+            runCatching { interpreter?.close() }
+            runCatching { stage0Interpreter?.close() }
+            interpreter = null
+            stage0Interpreter = null
+            outputHolder = null
+            inputBufferRef.set(null)
+            pixelArrayRef.set(null)
+            loadAttempted = false
+            modelBlocked = false
+        }
+        // Ensure newly created with current options
+        warmUp(sampleForWarmup)
     }
     fun isModelReady(): Boolean = interpreter != null && labels.isNotEmpty()
     fun loadedModelName(): String? = selectedModelName

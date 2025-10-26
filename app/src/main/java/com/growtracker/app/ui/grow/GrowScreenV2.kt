@@ -65,7 +65,7 @@ fun GrowScreenV2(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            val plants by remember { derivedStateOf { GrowDataStore.plants } }
+            val plants by remember { derivedStateOf { GrowDataStore.plants.filter { !it.isDrying } } }
 
             if (plants.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
