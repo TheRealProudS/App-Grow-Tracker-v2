@@ -105,9 +105,9 @@ ml/**/*.onnx
 ml/**/*.tflite
 ml/**/plan.json
 
-# Datasets (raw & processed) - keep out of repo
-datasets/
-data/
+# Datasets (raw & processed) - keep out of repo (only at repo root)
+/datasets/
+/data/
 
 # Python virtual envs
 .venv/
