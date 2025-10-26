@@ -74,11 +74,11 @@ jobs:
         env:
           RELEASE_STORE_FILE_B64: ${{ secrets.RELEASE_STORE_FILE_B64 }}
         run: |
-          mkdir -p keys
+          mkdir -p app/keys
           if [ -n "$RELEASE_STORE_FILE_B64" ]; then
             echo "Decoding keystore from secret..."
-            echo "$RELEASE_STORE_FILE_B64" | base64 -d > keys/release.jks
-            echo "ORG_GRADLE_PROJECT_RELEASE_STORE_FILE=keys/release.jks" >> $GITHUB_ENV
+            echo "$RELEASE_STORE_FILE_B64" | base64 -d > app/keys/release.jks
+            echo "ORG_GRADLE_PROJECT_RELEASE_STORE_FILE=$GITHUB_WORKSPACE/app/keys/release.jks" >> $GITHUB_ENV
           else
             echo "No RELEASE_STORE_FILE_B64 secret configured. Will build debug if release signing is required."
           fi
