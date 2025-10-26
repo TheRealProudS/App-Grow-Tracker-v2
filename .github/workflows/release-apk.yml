@@ -15,6 +15,10 @@ on:
     tags:
       - 'v*'
 
+# Grant the workflow permission to create GitHub Releases using the automatic GITHUB_TOKEN
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
