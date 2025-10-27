@@ -8,6 +8,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
@@ -146,13 +149,48 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
 
     var manufacturerExpanded by remember { mutableStateOf(false) }
     var strainExpanded by remember { mutableStateOf(false) }
+    var strainQuery by remember { mutableStateOf("") }
     var potSize by remember { mutableStateOf("") }
 
-    // Get unique manufacturers from StrainRepository
-    val availableManufacturers = StrainRepository.manufacturers.map { it.name }.distinct().sortedBy { it.lowercase() }
-    val strains = if (manufacturer.isNotEmpty()) {
-        StrainRepository.manufacturers.find { it.name.equals(manufacturer, ignoreCase = true) }?.strains ?: emptyList()
+    // Get unique manufacturers from StrainRepository and add a custom option
+    val customManufacturerLabel = "Eigener Strain"
+    val availableManufacturers = remember {
+        // Always show the custom option at the top
+        listOf(customManufacturerLabel) +
+            StrainRepository.manufacturers
+                .map { it.name }
+                .distinct()
+                .sortedBy { it.lowercase() }
+    }
+    val isCustomStrain = manufacturer == customManufacturerLabel
+    // Separate query from the selected manufacturer so we can always show full list on open
+    var manufacturerQuery by remember { mutableStateOf("") }
+    // Precompute manufacturer -> strain count to avoid repeated lookups during list rendering
+    val manufacturerCounts = remember {
+        StrainRepository.manufacturers.associate { it.name.lowercase() to it.strains.size }
+    }
+    // Filter manufacturers by typed query; when query is blank, show the full list
+    val filteredManufacturers = remember(manufacturerQuery, availableManufacturers) {
+        val query = manufacturerQuery.trim()
+        if (query.isBlank()) availableManufacturers
+        else {
+            val filtered = availableManufacturers
+                .filter { it != customManufacturerLabel && it.contains(query, ignoreCase = true) }
+            listOf(customManufacturerLabel) + filtered
+        }
+    }
+    val strains = if (!isCustomStrain && manufacturer.isNotEmpty()) {
+        (StrainRepository.manufacturers
+            .find { it.name.equals(manufacturer, ignoreCase = true) }
+            ?.strains ?: emptyList())
+            .sortedBy { it.name.lowercase() }
     } else emptyList()
+
+    // Do not auto-open strains; close it on manufacturer change to require manual open
+    LaunchedEffect(manufacturer) {
+        strainExpanded = false
+        strainQuery = ""
+    }
 
     if (strains.isNotEmpty()) {
         val selectedStrain = strains.find { it.name.equals(strain, ignoreCase = true) }
@@ -200,24 +238,20 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                         value = manufacturer,
                         onValueChange = {
                             manufacturer = it
+                            manufacturerQuery = it
                             strain = ""
                         },
                         label = { Text("Hersteller") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth(),
                         singleLine = true,
                         readOnly = false,
-                        interactionSource = remember { MutableInteractionSource() }
-                            .also { interactionSource ->
-                                LaunchedEffect(interactionSource) {
-                                    interactionSource.interactions.collect {
-                                        if (it is androidx.compose.foundation.interaction.PressInteraction.Press) {
-                                            manufacturerExpanded = !manufacturerExpanded
-                                        }
-                                    }
-                                }
-                            },
+                        // Remove press-based toggling to avoid opening before anchor is ready
                         trailingIcon = {
-                            IconButton(onClick = { manufacturerExpanded = !manufacturerExpanded }) {
+                            IconButton(onClick = {
+                                manufacturerExpanded = !manufacturerExpanded
+                                if (manufacturerExpanded) manufacturerQuery = "" // always show full list on open
+                            }) {
                                 Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
                             }
                         }
@@ -226,15 +260,55 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                         expanded = manufacturerExpanded,
                         onDismissRequest = { manufacturerExpanded = false }
                     ) {
-                        availableManufacturers.forEach { manu ->
-                            DropdownMenuItem(
-                                text = { Text(manu) },
-                                onClick = {
-                                    manufacturer = manu
-                                    manufacturerExpanded = false
-                                    strain = ""
-                                }
-                            )
+                        // Search box inside dropdown for manufacturers
+                        OutlinedTextField(
+                            value = manufacturerQuery,
+                            onValueChange = { manufacturerQuery = it },
+                            label = { Text("Suchen…") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                        HorizontalDivider()
+                        // Scrollable list of manufacturers (safer inside DropdownMenu)
+                        val manuList = filteredManufacturers
+                        val manuScroll = rememberScrollState()
+                        Column(
+                            modifier = Modifier
+                                .heightIn(max = 320.dp)
+                                .verticalScroll(manuScroll)
+                        ) {
+                            manuList.forEach { manu ->
+                                val manuCount = if (manu == customManufacturerLabel) null else manufacturerCounts[manu.lowercase()] ?: 0
+                                DropdownMenuItem(
+                                    text = { Text(manu) },
+                                    trailingIcon = {
+                                        if (manuCount != null) {
+                                            Text(
+                                                text = manuCount.toString(),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        manufacturer = manu
+                                        manufacturerExpanded = false
+                                        strain = ""
+                                        manufacturerQuery = ""
+                                        if (manu == customManufacturerLabel) {
+                                            // Reset auto-filled values for custom entry
+                                            thc = ""
+                                            cbd = ""
+                                            strainExpanded = false
+                                        } else {
+                                            // Keep strains closed; user opens manually
+                                            strainExpanded = false
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -245,41 +319,84 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                         value = strain,
                         onValueChange = { strain = it },
                         label = { Text("Sorte") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth(),
                         singleLine = true,
-                        readOnly = false,
-                        interactionSource = remember { MutableInteractionSource() }
-                            .also { interactionSource ->
-                                LaunchedEffect(interactionSource) {
-                                    interactionSource.interactions.collect {
-                                        if (it is androidx.compose.foundation.interaction.PressInteraction.Press) {
-                                            strainExpanded = !strainExpanded
-                                        }
-                                    }
-                                }
-                            },
+                        readOnly = !isCustomStrain && strains.isNotEmpty(),
+                        enabled = true,
+                        // Avoid press-based toggling; use trailing icon to open
                         trailingIcon = {
-                            IconButton(onClick = { strainExpanded = !strainExpanded }) {
-                                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
+                            if (!isCustomStrain && strains.isNotEmpty()) {
+                                IconButton(onClick = { strainExpanded = !strainExpanded }) {
+                                    Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
+                                }
                             }
                         }
                     )
-                    DropdownMenu(
-                        expanded = strainExpanded,
-                        onDismissRequest = { strainExpanded = false }
-                    ) {
-                        strains.forEach { strainData ->
-                            DropdownMenuItem(
-                                text = { Text(strainData.name) },
-                                onClick = {
-                                    strain = strainData.name
-                                    strainExpanded = false
-                                    thc = strainData.thcContent
-                                    cbd = strainData.cbdContent
-                                    plantType = strainData.type
-                                }
+                    if (!isCustomStrain && strains.isNotEmpty()) {
+                        DropdownMenu(
+                            expanded = strainExpanded,
+                            onDismissRequest = { strainExpanded = false }
+                        ) {
+                            // Search box inside dropdown
+                            OutlinedTextField(
+                                value = strainQuery,
+                                onValueChange = { strainQuery = it },
+                                label = { Text("Suchen…") },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
                             )
+                            HorizontalDivider()
+                            val filteredStrains = remember(strainQuery, strains) {
+                                val q = strainQuery.trim()
+                                if (q.isBlank()) strains else strains.filter { it.name.contains(q, ignoreCase = true) }
+                            }
+                            // Scrollable list of strains (safer inside DropdownMenu)
+                            val strainScroll = rememberScrollState()
+                            Column(
+                                modifier = Modifier
+                                    .heightIn(max = 320.dp)
+                                    .verticalScroll(strainScroll)
+                            ) {
+                                filteredStrains.forEach { strainData ->
+                                    DropdownMenuItem(
+                                        text = { Text(strainData.name) },
+                                        onClick = {
+                                            strain = strainData.name
+                                            strainExpanded = false
+                                            thc = strainData.thcContent
+                                            cbd = strainData.cbdContent
+                                            plantType = strainData.type
+                                            strainQuery = ""
+                                        }
+                                    )
+                                }
+                            }
                         }
+                    }
+                }
+
+                // Strain count is shown inline in the manufacturer dropdown trailing icon
+
+                // For custom strain: allow manual THC/CBD entry
+                if (isCustomStrain) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = thc,
+                            onValueChange = { thc = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' || ch == '-' || ch == '<' || ch == '>' } },
+                            label = { Text("THC (%)") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = cbd,
+                            onValueChange = { cbd = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' || ch == '-' || ch == '<' || ch == '>' } },
+                            label = { Text("CBD (%)") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
 
@@ -304,7 +421,7 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                 val defaultName = if (manufacturer.isNotBlank() && strain.isNotBlank()) "$manufacturer - $strain" else "Neue Pflanze"
                 val plant = Plant(id = "", name = defaultName, manufacturer = manufacturer, strain = strain, thcContent = thc, cbdContent = cbd, germinationDate = if (germinationEpoch == 0L) null else germinationEpoch)
                 onAdd(countInt.coerceAtLeast(1), plant)
-            }, enabled = countInt > 0) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_ok)) }
+            }, enabled = countInt > 0 && (!isCustomStrain || strain.isNotBlank())) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_ok)) }
         },
         dismissButton = { TextButton(onClick = onCancel) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_cancel)) } }
     )

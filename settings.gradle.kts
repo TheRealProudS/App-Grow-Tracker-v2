@@ -19,7 +19,10 @@ dependencyResolutionManagement {
     }
 }
 
+
 rootProject.name = "GrowTracker"
 include(":app")
 include(":baselineprofile")
 include(":macrobenchmark")
+// Developer tool module for parsing SeedFinder alphabetical pages into structured data
+include(":tools:seedfinder-ingest")

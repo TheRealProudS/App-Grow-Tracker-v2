@@ -3,7 +3,7 @@ package com.growtracker.app.data
 // Reuse the serializable models from GrowModels.kt (SeedManufacturer, StrainInfo)
 object StrainRepository {
     // Seeded dataset using existing types
-    val manufacturers: List<SeedManufacturer> = listOf(
+    private val baseManufacturers: List<SeedManufacturer> = listOf(
         SeedManufacturer(
             name = "Green House Seeds",
             strains = listOf(
@@ -423,8 +423,102 @@ object StrainRepository {
         )
     )
 
+    // Merge base list with SeedFinder additions and optional A–Z JSON (res/raw)
+    val manufacturers: List<SeedManufacturer> by lazy {
+        val jsonManufacturers = loadSeedFinderFromRaw()
+        mergeManufacturers(
+            baseManufacturers,
+            seedFinderAdditions() + jsonManufacturers
+        )
+    }
+
     suspend fun fetchFromWebSources(): List<SeedManufacturer> {
         // Not implemented; return the seeded dataset
         return manufacturers
+    }
+    
+    private fun mergeManufacturers(
+        base: List<SeedManufacturer>,
+        extra: List<SeedManufacturer>
+    ): List<SeedManufacturer> {
+        val map = linkedMapOf<String, MutableList<StrainInfo>>()
+        // Normalize and alias manufacturer names to avoid duplicates like "Barneys Farm" vs "Barney's Farm"
+        val aliasMap = mapOf(
+            // Common brand punctuation variants
+            "barneys farm" to "barney's farm",
+            "white label" to "white label seeds",
+            "greenhouse seeds" to "green house seeds",
+            // Brand spelling variants
+            "th seeds" to "t.h.seeds",
+            "world of seeds bank" to "world of seeds",
+            "zambeza" to "zambeza seeds"
+        )
+        fun keyOf(name: String): String {
+            val raw = name.trim().lowercase()
+            val alias = aliasMap[raw] ?: raw
+            return alias
+        }
+        // load base
+        for (m in base) {
+            map.getOrPut(keyOf(m.name)) { mutableListOf() }.addAll(m.strains)
+        }
+        // merge extra
+        for (m in extra) {
+            val k = keyOf(m.name)
+            val existing = map.getOrPut(k) { mutableListOf() }
+            val names = existing.map { it.name.trim().lowercase() }.toMutableSet()
+            for (s in m.strains) {
+                if (names.add(s.name.trim().lowercase())) existing.add(s)
+            }
+        }
+        // rebuild deterministic list preserving base order and then adding new manufacturers in extra order
+        val orderedKeys = LinkedHashSet<String>().apply {
+            base.forEach { add(keyOf(it.name)) }
+            extra.forEach { add(keyOf(it.name)) }
+        }
+        return orderedKeys.map { k ->
+            val origName = base.find { keyOf(it.name) == k }?.name
+                ?: extra.find { keyOf(it.name) == k }?.name
+                ?: k
+            SeedManufacturer(name = origName, strains = map[k] ?: emptyList())
+        }
+    }
+
+    // Load full A–Z dataset from res/raw/seedfinder_a_to_z.json, if present
+    private fun loadSeedFinderFromRaw(): List<SeedManufacturer> {
+        return try {
+            val res = com.growtracker.app.GrowTrackerApp.context.resources
+            val id = res.getIdentifier("seedfinder_a_to_z", "raw", com.growtracker.app.GrowTrackerApp.context.packageName)
+            if (id == 0) return emptyList()
+            res.openRawResource(id).use { input ->
+                val json = input.readBytes().toString(Charsets.UTF_8)
+                parseBreederMapJson(json)
+            }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    // Parse a simple JSON map: { "Breeder": ["Strain1", ...], ... }
+    private fun parseBreederMapJson(json: String): List<SeedManufacturer> {
+        return try {
+            val arr = mutableListOf<SeedManufacturer>()
+            val obj = org.json.JSONObject(json)
+            val names = obj.keys().asSequence().toList().sortedBy { it.lowercase() }
+            for (breeder in names) {
+                val strainsJson = obj.optJSONArray(breeder) ?: continue
+                val strains = mutableListOf<StrainInfo>()
+                for (i in 0 until strainsJson.length()) {
+                    val n = strainsJson.optString(i).trim()
+                    if (n.isNotEmpty()) strains += StrainInfo(name = n, thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_HYBRID)
+                }
+                // Sort strains for nicer dropdown UX
+                val sortedStrains = strains.sortedBy { it.name.lowercase() }
+                arr += SeedManufacturer(name = breeder, strains = sortedStrains)
+            }
+            arr
+        } catch (_: Throwable) {
+            emptyList()
+        }
     }
 }

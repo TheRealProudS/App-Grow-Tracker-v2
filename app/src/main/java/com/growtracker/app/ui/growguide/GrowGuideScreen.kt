@@ -283,7 +283,8 @@ fun GrowGuideScreen(
                         "PPFD‑Zielwerte (Richtwerte): Keimling 100–250; Vegetativ 250–500; Blüte 500–900 µmol/m²/s",
                         "Spektrum: Vollspektrum bevorzugt; mehr Rot fördert Blüte, Blau för kompaktere Pflanzen",
                         "Abstand und Dimmung nach Hersteller, gleichmäßige Abdeckung ist wichtiger als reine Leistung",
-                        "Laufzeiten: Vegetativ ~18/6, Blüte 12/12 (an Sorte anpassen)"
+                        "Laufzeiten: Vegetativ ~18/6, Blüte 12/12 (an Sorte anpassen)",
+                        "App‑Tipp: Photone misst Lichtintensität speziell für Pflanzen (PAR, PPFD, DLI) sowie Lux, Fußkerzen (Foot‑Candles) und Farbtemperatur — eine beliebte Option im Indoor‑Anbau. Für genaue Messungen ist die Verwendung eines zusätzlichen Diffusors erforderlich, der entweder gekauft oder selbst hergestellt werden kann."
                     ),
                     tip = "Messe PPFD, wenn möglich, und optimiere Lichtposition für gleichmäßige Intensität; berechne Energiebedarf im Budget."
                 ),
