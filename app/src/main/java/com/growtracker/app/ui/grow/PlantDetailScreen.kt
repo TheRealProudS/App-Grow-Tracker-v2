@@ -103,6 +103,8 @@ fun PlantDetailScreen(plant: Plant, onBack: () -> Unit = {}) {
                 )
             }
             item { EntriesSection(entries = plant.entries ?: emptyList(), plantId = plant.id, preferredFertilizerManufacturer = plant.preferredFertilizerManufacturer, selectedDate = selectedDate, isSmallScreen = isSmallScreen) }
+            // Add bottom spacer so the FloatingActionButton never covers the last list items
+            item { Spacer(modifier = Modifier.height(if (isSmallScreen) 80.dp else 96.dp)) }
         }
     }
 

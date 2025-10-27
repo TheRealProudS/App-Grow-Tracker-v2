@@ -14,16 +14,75 @@ object StrainRepository {
         SeedManufacturer(
             name = "Royal Queen Seeds",
             strains = listOf(
-                StrainInfo(name = "Amnesia Haze", thcContent = "22", cbdContent = "0.8", type = PlantType.FEMINIZED_SATIVA),
-                StrainInfo(name = "Northern Light", thcContent = "16", cbdContent = "0.3", type = PlantType.FEMINIZED_INDICA),
-                StrainInfo(name = "Royal Cookies", thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_HYBRID),
-                StrainInfo(name = "Royal Gorilla", thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_HYBRID),
-                StrainInfo(name = "Royal Highness (CBD)", thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_HYBRID),
-                StrainInfo(name = "Royal AK", thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_HYBRID),
-                StrainInfo(name = "Quick One (Auto)", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
-                StrainInfo(name = "Critical", thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_HYBRID),
-                StrainInfo(name = "White Widow", thcContent = "18", cbdContent = "0.5", type = PlantType.FEMINIZED_HYBRID),
-                StrainInfo(name = "Royal Moby", thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_SATIVA)
+                // Core Royal Queen Seeds Collection (values normalized without %)
+                StrainInfo(name = "White Widow", thcContent = "19-25", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Amnesia Haze", thcContent = "20-25", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Blue Cheese", thcContent = "18-20", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Critical", thcContent = "18-22", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Power Flower", thcContent = "19-24", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Sour Diesel", thcContent = "19-25", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "OG Kush", thcContent = "19-26", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Cookies Gelato", thcContent = "25-28", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Purple Queen", thcContent = "15-22", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Special Queen #1", thcContent = "18-20", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+
+                // Extended Royal Queen Seeds Collection
+                StrainInfo(name = "Royal Domina", thcContent = "20-25", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Royal Jack", thcContent = "18-23", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Royal Haze", thcContent = "17-21", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Royal Cookies", thcContent = "23-26", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Royal Gorilla", thcContent = "25-30", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Royal AK", thcContent = "17-20", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Royal Bluematic", thcContent = "14-16", cbdContent = "<1", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Royal Dwarf", thcContent = "13-16", cbdContent = "<1", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Easy Bud", thcContent = "12-14", cbdContent = "<1", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Quick One", thcContent = "13-17", cbdContent = "<1", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Royal Critical", thcContent = "18-22", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Royal Cheese", thcContent = "17-19", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Fat Banana", thcContent = "25-28", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Wedding Gelato", thcContent = "25-27", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Mimosa x Orange Punch", thcContent = "24-27", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Sherbet Queen", thcContent = "24-26", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Green Gelato", thcContent = "24-26", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Watermelon", thcContent = "22-24", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Pineapple Kush", thcContent = "18-25", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Epsilon F1", thcContent = "15-20", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                // Note: RQS sells Stress Killer Automatic CBD; kept as-is from dataset
+                StrainInfo(name = "Stress Killer", thcContent = "18-21", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Dance World", thcContent = "12-15", cbdContent = "12-15", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Joanne's CBD", thcContent = "1", cbdContent = "12-15", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Euphoria", thcContent = "9", cbdContent = "6", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Painkiller XL", thcContent = "9", cbdContent = "9", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Honey Cream", thcContent = "16-20", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Skunk XL", thcContent = "17-20", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Ice", thcContent = "18-20", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Northern Light", thcContent = "18-22", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Fruit Spirit", thcContent = "18-22", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Special Kush #1", thcContent = "17-20", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Shining Silver Haze", thcContent = "21-25", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Dark Angel", thcContent = "20-25", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Sweet ZZ", thcContent = "17-20", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Diesel", thcContent = "20-25", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Bubble Kush", thcContent = "19-22", cbdContent = "<1", type = PlantType.FEMINIZED_INDICA),
+                StrainInfo(name = "Monster", thcContent = "16-18", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Lemon Shining Silver Haze", thcContent = "21-25", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Royal Moby", thcContent = "21-24", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Chocolate Haze", thcContent = "20-25", cbdContent = "<1", type = PlantType.FEMINIZED_SATIVA),
+                StrainInfo(name = "Apollo F1", thcContent = "16-21", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Titan F1", thcContent = "25-30", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Hyperion F1", thcContent = "23-26", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Zeus F1", thcContent = "25-28", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                // Orion F1: RQS lists it as F1-hybrid auto; no official THC% provided on product page. Keep CBD as <1 and leave THC blank.
+                StrainInfo(name = "Orion F1", thcContent = "", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Poseidon F1", thcContent = "20-23", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Hera F1", thcContent = "22-25", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Athena F1", thcContent = "24-27", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Hermes F1", thcContent = "21-24", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Artemis F1", thcContent = "23-26", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+                StrainInfo(name = "Dionysus F1", thcContent = "22-25", cbdContent = "<1", type = PlantType.FEMINIZED_HYBRID),
+
+                // Kept existing item not present in the dataset
+                StrainInfo(name = "Royal Highness (CBD)", thcContent = "", cbdContent = "", type = PlantType.FEMINIZED_HYBRID)
             )
         ),
         SeedManufacturer(
@@ -309,6 +368,58 @@ object StrainRepository {
                 StrainInfo(name = "Apples & Bananas", thcContent = "26", cbdContent = "", type = PlantType.FEMINIZED_HYBRID),
                 StrainInfo(name = "Cream Mandarine AUTO", thcContent = "21-23", cbdContent = "", type = PlantType.AUTOFLOWER)
             ))
+        )
+        ,
+        // SpeedRunSeeds (feminized autoflowers - Indica category)
+        SeedManufacturer(
+            name = "SpeedRunSeeds",
+            strains = listOf(
+                // Base set (Indica category)
+                StrainInfo(name = "Fatality", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Golden Gun", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Acid Snow", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Blappleberry Haze F3", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Boss Battle", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Dreamcast", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Frosted Cherry'Os F2", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Frosted Cherry'Os F3", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "God Particle", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Granite Runtz", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Holy Hand Grenade", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Magnum Dong", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Pound Dawg F4", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Sour Black Cherry Haze", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Super Chonk", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Supreme Runtz", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Supreme Runtz F3", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Terp Sneeze", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Witness Protection", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+
+                // Additional strains from Sativa, Sweet & Fruity, Funky & Skunky categories
+                StrainInfo(name = "Double Jump", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Combo Breaker", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Final Boss F2", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Granite Gas", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Granite Haze F4", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Granite Haze F5", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Granite Haze F6", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Haze Beast", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Haze Invader", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Holy Fire", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Jehova's Witness", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Rainbow Six", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Rockslide", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Sapphyre", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Sapphyre F2", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Slapple", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Easter Egg", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Iced Latte", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Orange Portal", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "SLAM Berry", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Froot Fuel", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Froot Fuel Bx1", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER),
+                StrainInfo(name = "Pound Dawg F5", thcContent = "", cbdContent = "", type = PlantType.AUTOFLOWER)
+            )
         )
     )
 

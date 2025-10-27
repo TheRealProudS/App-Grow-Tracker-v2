@@ -17,11 +17,12 @@ android {
     targetProjectPath = ":app"
 
     buildTypes {
-        // Define a release build type for the test APK. Since the app's release is minified,
-        // enable minify here too to satisfy the obfuscation check. Keep it debuggable for profiling.
+        // Define a release build type for the test APK. Keep it debuggable for profiling,
+        // but do NOT enable minification here to avoid AGP warning: debuggable + minify.
         create("release") {
-            isMinifyEnabled = true
             isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 
