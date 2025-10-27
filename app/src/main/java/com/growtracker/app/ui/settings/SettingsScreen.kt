@@ -151,7 +151,7 @@ fun SettingsScreen(
             item {
                 SamsungSettingsItem(
                     title = getString(Strings.settings_system_info, languageManager),
-                    subtitle = "BETA-Version 1.0.0 • Android ${Build.VERSION.RELEASE}",
+                    subtitle = "BETA-Version 1.0.2 • Android ${Build.VERSION.RELEASE}",
                     icon = Icons.Filled.Info,
                     onClick = { showSystemInfoDialog = true }
                 )
@@ -526,7 +526,7 @@ fun SystemInfoDialog(
 
                 SystemInfoItem(
                     getString(Strings.system_info_app_version, languageManager), 
-                    "BETA-Version 1.0.0"
+                    "BETA-Version 1.0.2"
                 )
                 SystemInfoItem(
                     getString(Strings.system_info_android_version, languageManager), 
