@@ -1,0 +1,66 @@
+name: Quick Debug APK
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK (minimal)
+        shell: bash
+        run: |
+          set -e
+          : "${ANDROID_SDK_ROOT:=/usr/local/lib/android/sdk}"
+          mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
+          # Bootstrap cmdline-tools (new enough for repo XML v4)
+          curl -sSL -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip
+          unzip -q /tmp/cmdline-tools.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
+          mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/16.0"
+          SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/16.0/bin/sdkmanager"
+          "$SDKMANAGER" --version || true
+          # Accept licenses without yes| pipe
+          "$SDKMANAGER" --sdk_root="${ANDROID_SDK_ROOT}" --licenses <<'EOF'
+          y
+          y
+          y
+          y
+          y
+          y
+          EOF
+          # Install minimal packages for debug build
+          "$SDKMANAGER" --sdk_root="${ANDROID_SDK_ROOT}" --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" || "$SDKMANAGER" --sdk_root="${ANDROID_SDK_ROOT}" --install "build-tools;34.0.0"
+          # Configure Gradle SDK dir
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" > local.properties
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Debug APK
+        shell: bash
+        run: |
+          set -e
+          ./gradlew :app:assembleDebug --stacktrace --no-daemon
+          echo "apk_path=app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_OUTPUT
+        id: build
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: ${{ steps.build.outputs.apk_path }}
