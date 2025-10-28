@@ -10,6 +10,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -283,66 +286,99 @@ private fun SimpleCalendarView(
         }
 
     if (expanded) {
-            // Weekday headers (Mon-Sun)
             // Use fixed cell sizes and center the grid so it is always horizontally centered
             val days = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
             val cellSize = if (isSmallScreen) 40.dp else 48.dp
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Row(modifier = Modifier.wrapContentWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    days.forEach { d ->
-                        Text(
-                            d,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.width(cellSize),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            // Prepare swipe handling state once for the whole expanded calendar area (headers + grid)
+            val density = LocalDensity.current
+            val swipeThresholdPx = with(density) { 56.dp.toPx() }
+            var accumulatedDx by remember(monthCal.timeInMillis) { mutableStateOf(0f) }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(monthCal.timeInMillis) {
+                        detectDragGestures(
+                            onDragEnd = {
+                                when {
+                                    accumulatedDx > swipeThresholdPx -> {
+                                        // swipe right -> previous month
+                                        monthCal = (monthCal.clone() as Calendar).apply { add(Calendar.MONTH, -1) }
+                                    }
+                                    accumulatedDx < -swipeThresholdPx -> {
+                                        // swipe left -> next month
+                                        monthCal = (monthCal.clone() as Calendar).apply { add(Calendar.MONTH, 1) }
+                                    }
+                                }
+                                accumulatedDx = 0f
+                            },
+                            onDrag = { _, dragAmount ->
+                                accumulatedDx += dragAmount.x
+                            }
                         )
                     }
+            ) {
+                // Weekday headers (Mon-Sun)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    Row(modifier = Modifier.wrapContentWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        days.forEach { d ->
+                            Text(
+                                d,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.width(cellSize),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
                 }
-            }
 
-            Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(4.dp))
 
-            // Build month grid with fixed-sized cells
-            val firstOfMonth = (monthCal.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
-            val firstWeekdayMon0 = (firstOfMonth.get(Calendar.DAY_OF_WEEK) + 5) % 7
-            val daysInMonth = firstOfMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
-            val totalCells = run {
-                val used = firstWeekdayMon0 + daysInMonth
-                val remainder = used % 7
-                if (remainder == 0) used else used + (7 - remainder)
-            }
-            val rows = (totalCells + 6) / 7
+                // Build month grid with fixed-sized cells
+                val firstOfMonth = (monthCal.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, 1) }
+                val firstWeekdayMon0 = (firstOfMonth.get(Calendar.DAY_OF_WEEK) + 5) % 7
+                val daysInMonth = firstOfMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
+                val totalCells = run {
+                    val used = firstWeekdayMon0 + daysInMonth
+                    val remainder = used % 7
+                    if (remainder == 0) used else used + (7 - remainder)
+                }
+                val rows = (totalCells + 6) / 7
 
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Column(modifier = Modifier.wrapContentWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(rows) { r ->
-                        Row(modifier = Modifier.wrapContentWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            repeat(7) { cIdx ->
-                                val index = r * 7 + cIdx
-                                if (index < firstWeekdayMon0 || index >= firstWeekdayMon0 + daysInMonth) {
-                                    Box(modifier = Modifier.size(cellSize))
-                                } else {
-                                    val dayNum = index - firstWeekdayMon0 + 1
-                                    val cellCal = (firstOfMonth.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, dayNum) }
-                                    val cellMillis = normalizeMidnight(cellCal.timeInMillis)
-                                    val isSelected = selectedMidnight != null && selectedMidnight == cellMillis
-                                    val isToday = todayMidnight == cellMillis
-                                    val bg = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(modifier = Modifier.wrapContentWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(rows) { r ->
+                            Row(modifier = Modifier.wrapContentWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                repeat(7) { cIdx ->
+                                    val index = r * 7 + cIdx
+                                    if (index < firstWeekdayMon0 || index >= firstWeekdayMon0 + daysInMonth) {
+                                        Box(modifier = Modifier.size(cellSize))
+                                    } else {
+                                        val dayNum = index - firstWeekdayMon0 + 1
+                                        val cellCal = (firstOfMonth.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, dayNum) }
+                                        val cellMillis = normalizeMidnight(cellCal.timeInMillis)
+                                        val isSelected = selectedMidnight != null && selectedMidnight == cellMillis
+                                        val isToday = todayMidnight == cellMillis
+                                        val bg = if (isSelected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant
 
-                                    Surface(shape = RoundedCornerShape(8.dp), color = bg, modifier = Modifier.size(cellSize).clickable { onSelectDate(cellMillis) }) {
-                                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                                Text(dayNum.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                                                if (isToday && !isSelected) Text("heute", style = MaterialTheme.typography.labelSmall)
-                                                // Harvest marker label
-                                                if (estimatedHarvestMidnight != null && estimatedHarvestMidnight == cellMillis) {
-                                                    Spacer(Modifier.height(2.dp))
-                                                    Text(
-                                                        text = getString(com.growtracker.app.ui.language.GrowStrings.harvest_label),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.tertiary
-                                                    )
+                                        Surface(shape = RoundedCornerShape(8.dp), color = bg, modifier = Modifier.size(cellSize).clickable { onSelectDate(cellMillis) }) {
+                                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                                    Text(dayNum.toString(), style = MaterialTheme.typography.bodyMedium, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                                                    if (isToday && !isSelected) Text("heute", style = MaterialTheme.typography.labelSmall)
+                                                    // Harvest marker label
+                                                    if (estimatedHarvestMidnight != null && estimatedHarvestMidnight == cellMillis) {
+                                                        Spacer(Modifier.height(2.dp))
+                                                        Text(
+                                                            text = getString(com.growtracker.app.ui.language.GrowStrings.harvest_label),
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.tertiary
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
