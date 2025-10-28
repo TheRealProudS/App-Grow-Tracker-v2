@@ -28,6 +28,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import com.growtracker.app.ui.grow.GrowDataStore
 import com.growtracker.app.ui.theme.ThemeManager
 import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Language
@@ -118,6 +119,32 @@ fun SettingsScreen(
                     subtitle = "${languageManager.currentLanguage.flag} ${languageManager.currentLanguage.displayName}",
                     icon = Icons.Filled.Language,
                     onClick = { showLanguageDialog = true }
+                )
+            }
+
+            // Search memory toggle
+            item {
+                SamsungSettingsItem(
+                    title = getString(Strings.settings_search_memory, languageManager),
+                    subtitle = getString(Strings.settings_search_memory_subtitle, languageManager),
+                    icon = Icons.Filled.History,
+                    isSwitch = true,
+                    switchChecked = GrowDataStore.rememberSearchEnabled,
+                    onSwitchChange = { enabled -> GrowDataStore.setRememberSearchEnabled(enabled) }
+                )
+            }
+
+            // Clear search history action
+            item {
+                val ctx = LocalContext.current
+                SamsungSettingsItem(
+                    title = getString(Strings.settings_clear_search_history, languageManager),
+                    subtitle = getString(Strings.settings_clear_search_history_subtitle, languageManager),
+                    icon = Icons.Filled.Delete,
+                    onClick = {
+                        GrowDataStore.clearRecentSearches()
+                        Toast.makeText(ctx, resolveString(Strings.settings_cleared_toast, languageManager.currentLanguage), Toast.LENGTH_SHORT).show()
+                    }
                 )
             }
 

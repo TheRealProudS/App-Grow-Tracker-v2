@@ -12,10 +12,15 @@ import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Water
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,6 +34,8 @@ import com.growtracker.app.ui.grow.GrowDataStore
 import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.language.getString
+import com.growtracker.app.data.PowerDevice
+import com.growtracker.app.data.DeviceScheduleType
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -39,6 +46,8 @@ fun PlantStatisticsScreen(
     onNavigateBack: () -> Unit
 ) {
     val plants = remember { GrowDataStore.plants }
+    // Shared per-second ticker for the whole screen to avoid multiple concurrent loops
+    val nowTick = rememberNowTicker()
 
     Column(
         modifier = Modifier
@@ -68,7 +77,7 @@ fun PlantStatisticsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(plants, key = { it.id }) { plant ->
-                    PlantStatsCard(plant = plant)
+                    PlantStatsCard(plant = plant, languageManager = languageManager, nowTick = nowTick)
                 }
             }
         }
@@ -105,7 +114,7 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun PlantStatsCard(plant: Plant) {
+private fun PlantStatsCard(plant: Plant, languageManager: LanguageManager, nowTick: Long) {
     val waterLiters = plant.entries
         .filter { it.type == EntryType.WATERING }
         .sumOf { it.value.trim().lowercase(Locale.getDefault()).replace("ml", "").replace("l", "").toDoubleOrNull() ?: 0.0 }
@@ -169,7 +178,141 @@ private fun PlantStatsCard(plant: Plant) {
                 Spacer(Modifier.height(6.dp))
                 HeightSparkline(points = heightPoints)
             }
+
+            // Energy statistics section (always visible, live updates)
+            Spacer(Modifier.height(12.dp))
+            EnergyStatCard(plant = plant, languageManager = languageManager, nowTick = nowTick)
         }
+    }
+}
+
+@Composable
+private fun EnergyStatCard(plant: Plant, languageManager: LanguageManager, nowTick: Long) {
+    val price = plant.electricityPrice
+    val startBase = plant.germinationDate ?: plant.plantingDate
+    val now = nowTick
+    val ts = plant.harvestDate?.let { kotlin.math.min(now, it) } ?: now
+    if (ts < startBase) return
+    // Daily kWh from devices only
+    var dailyKwh = 0.0
+    plant.devices.forEach { dev ->
+        val w = dev.watt ?: return@forEach
+        val eff = w * ((dev.powerPercent ?: 100).coerceIn(0, 100) / 100.0)
+        val dSec = deviceDailySeconds(dev)
+        dailyKwh += (eff * (dSec / 3600.0)) / 1000.0
+    }
+    val cal = java.util.Calendar.getInstance().apply { timeInMillis = ts }
+    val secondOfDay = cal.get(java.util.Calendar.HOUR_OF_DAY) * 3600 + cal.get(java.util.Calendar.MINUTE) * 60 + cal.get(java.util.Calendar.SECOND)
+    var kwhSoFar = 0.0
+    plant.devices.forEach { dev ->
+        val w = dev.watt ?: return@forEach
+        val eff = w * ((dev.powerPercent ?: 100).coerceIn(0, 100) / 100.0)
+        val onSoFarSec = deviceSecondsSoFar(dev, secondOfDay)
+        val hoursSoFar = onSoFarSec / 3600.0
+        kwhSoFar += (eff * hoursSoFar) / 1000.0
+    }
+    val costSoFar = if (price != null) kwhSoFar * price else 0.0
+
+    val daysActive = fullDaysBetween(startBase, ts)
+    val totalKwh = dailyKwh * daysActive + kwhSoFar
+    val totalCost = if (price != null) totalKwh * price else 0.0
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))) {
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(getString(Strings.power_stats_title, languageManager), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                LiveIndicator(nowTick = nowTick)
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("${String.format("%.2f", kwhSoFar)} kWh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(getString(Strings.power_stats_today_so_far, languageManager), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${String.format("%.2f", costSoFar)} €", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("${String.format("%.2f", totalKwh)} kWh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(getString(Strings.power_stats_total_to_date, languageManager), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${String.format("%.2f", totalCost)} €", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("${getString(Strings.power_stats_daily_usage, languageManager)}: ${String.format("%.2f", dailyKwh)} kWh", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun rememberNowTicker(periodMs: Long = 1000L): Long {
+    val state = remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(periodMs) {
+        while (true) {
+            kotlinx.coroutines.delay(periodMs)
+            state.value = System.currentTimeMillis()
+        }
+    }
+    return state.value
+}
+
+@Composable
+private fun LiveIndicator(nowTick: Long) {
+    // Blink every second using the shared ticker
+    val on = ((nowTick / 1000L) % 2L) == 0L
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Red dot
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(if (on) Color.Red else Color.Red.copy(alpha = 0.25f))
+        )
+        Spacer(Modifier.width(6.dp))
+        Text("LIVE", style = MaterialTheme.typography.labelSmall, color = if (on) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun fullDaysBetween(startMillis: Long, endMillis: Long): Int {
+    if (endMillis <= startMillis) return 0
+    val calStart = java.util.Calendar.getInstance().apply { timeInMillis = startMillis; set(java.util.Calendar.HOUR_OF_DAY,0); set(java.util.Calendar.MINUTE,0); set(java.util.Calendar.SECOND,0); set(java.util.Calendar.MILLISECOND,0) }
+    val calEnd = java.util.Calendar.getInstance().apply { timeInMillis = endMillis; set(java.util.Calendar.HOUR_OF_DAY,0); set(java.util.Calendar.MINUTE,0); set(java.util.Calendar.SECOND,0); set(java.util.Calendar.MILLISECOND,0) }
+    val diff = calEnd.timeInMillis - calStart.timeInMillis
+    return (diff / (24L*60*60*1000L)).toInt().coerceAtLeast(0)
+}
+
+private fun secondsOnSoFarToday(secondOfDay: Int, startMin: Int, endMin: Int): Int {
+    val startSec = startMin * 60
+    val endSec = endMin * 60
+    return if (endSec >= startSec) {
+        when {
+            secondOfDay <= startSec -> 0
+            secondOfDay >= endSec -> endSec - startSec
+            else -> secondOfDay - startSec
+        }
+    } else { // crosses midnight
+        val part1 = if (secondOfDay >= startSec) secondOfDay - startSec else 0
+        val part2 = if (secondOfDay <= endSec) secondOfDay else endSec
+        part1 + part2
+    }
+}
+
+private fun deviceDailySeconds(dev: PowerDevice): Double {
+    return when (dev.scheduleType) {
+        DeviceScheduleType.ALWAYS_ON -> 24.0 * 3600.0
+        DeviceScheduleType.WINDOW ->
+            if (dev.startMinutes != null && dev.endMinutes != null)
+                secondsOnSoFarToday(24 * 3600, dev.startMinutes, dev.endMinutes).toDouble()
+            else 0.0
+        DeviceScheduleType.DUTY_CYCLE -> ((dev.dutyCyclePercent ?: 0).coerceIn(0, 100) / 100.0) * 24.0 * 3600.0
+    }
+}
+
+private fun deviceSecondsSoFar(dev: PowerDevice, secondOfDay: Int): Int {
+    return when (dev.scheduleType) {
+        DeviceScheduleType.ALWAYS_ON -> secondOfDay
+        DeviceScheduleType.WINDOW -> if (dev.startMinutes != null && dev.endMinutes != null)
+            secondsOnSoFarToday(secondOfDay, dev.startMinutes, dev.endMinutes) else 0
+        DeviceScheduleType.DUTY_CYCLE -> ((dev.dutyCyclePercent ?: 0).coerceIn(0, 100) * secondOfDay) / 100
     }
 }
 

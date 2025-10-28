@@ -1,14 +1,17 @@
 package com.growtracker.app.ui.grow
 
 import android.content.Context
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.growtracker.app.data.Plant
 import com.growtracker.app.data.StrainRepository
 import com.growtracker.app.data.Growbox
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,9 +36,22 @@ object GrowDataStore {
 	private val _growboxes = mutableStateListOf<Growbox>()
 	val growboxes: List<Growbox> = _growboxes
 
+    // Recent search memory (in-memory + persisted)
+    private val _recentManufacturers = mutableStateListOf<String>()
+    val recentManufacturers: List<String> = _recentManufacturers
+    private val _recentStrains = mutableStateListOf<RecentStrain>()
+    val recentStrains: List<RecentStrain> = _recentStrains
+
+	// Feature toggle for remembering/search suggestions (default OFF until user opts in)
+	private val _rememberSearch = mutableStateOf(false)
+    val rememberSearchEnabled: Boolean get() = _rememberSearch.value
+
 	private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 	private lateinit var appContext: Context
 	private val PLANTS_KEY = stringPreferencesKey("plants_json")
+    private val RECENT_MANU_KEY = stringPreferencesKey("recent_manufacturers_json")
+    private val RECENT_STRAIN_KEY = stringPreferencesKey("recent_strains_json")
+    private val REMEMBER_SEARCH_KEY = booleanPreferencesKey("remember_search_history")
 	private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
 
 	fun initialize(context: Context) {
@@ -74,6 +90,19 @@ object GrowDataStore {
 			scope.launch {
 				val jsonStrOut = json.encodeToString(filled)
 				appContext.growDataStore.edit { prefs: MutablePreferences -> prefs[PLANTS_KEY] = jsonStrOut }
+			}
+
+			// Load recent manufacturers and strains (best-effort)
+			val manuJson = prefs[RECENT_MANU_KEY] ?: "[]"
+			val strainJson = prefs[RECENT_STRAIN_KEY] ?: "[]"
+			val manuList = runCatching { json.decodeFromString<List<String>>(manuJson) }.getOrElse { emptyList() }
+			val strainList = runCatching { json.decodeFromString<List<RecentStrain>>(strainJson) }.getOrElse { emptyList() }
+			// Default to false (disabled) unless user explicitly enabled
+			val rememberFlag = prefs[REMEMBER_SEARCH_KEY] ?: false
+			withContext(Dispatchers.Main) {
+				_recentManufacturers.clear(); _recentManufacturers.addAll(manuList.distinct().take(20))
+				_recentStrains.clear(); _recentStrains.addAll(strainList.distinctBy { it.manufacturer.lowercase() + "|" + it.strain.lowercase() }.take(30))
+                _rememberSearch.value = rememberFlag
 			}
 		}
 	}
@@ -209,5 +238,63 @@ object GrowDataStore {
 			appContext.growDataStore.edit { prefs: MutablePreferences -> prefs.remove(PLANTS_KEY) }
 		}
 	}
+
+	/** Persist a manufacturer name to recent list (move to front, cap size). */
+	fun addRecentManufacturer(name: String) {
+		if (!rememberSearchEnabled) return
+		if (name.isBlank()) return
+		val key = name.trim()
+		// Update in-memory (main thread safe enough as Compose calls this on UI events)
+		_recentManufacturers.removeAll { it.equals(key, ignoreCase = true) }
+		_recentManufacturers.add(0, key)
+		while (_recentManufacturers.size > 20) _recentManufacturers.removeLast()
+		// Persist snapshot
+		val snapshot = _recentManufacturers.toList()
+		scope.launch {
+			val out = json.encodeToString(snapshot)
+			appContext.growDataStore.edit { p: MutablePreferences -> p[RECENT_MANU_KEY] = out }
+		}
+	}
+
+	/** Persist a (manufacturer,strain) pair to recent strains. */
+	fun addRecentStrain(manufacturer: String, strain: String) {
+		if (!rememberSearchEnabled) return
+		if (manufacturer.isBlank() || strain.isBlank()) return
+		val entry = RecentStrain(manufacturer.trim(), strain.trim())
+		_recentStrains.removeAll { it.manufacturer.equals(entry.manufacturer, true) && it.strain.equals(entry.strain, true) }
+		_recentStrains.add(0, entry)
+		while (_recentStrains.size > 30) _recentStrains.removeLast()
+		val snapshot = _recentStrains.toList()
+		scope.launch {
+			val out = json.encodeToString(snapshot)
+			appContext.growDataStore.edit { p: MutablePreferences -> p[RECENT_STRAIN_KEY] = out }
+		}
+	}
+
+    /** Enable/disable remembering search history and suggestions. */
+    fun setRememberSearchEnabled(enabled: Boolean) {
+        _rememberSearch.value = enabled
+        // Persist flag
+        scope.launch {
+            appContext.growDataStore.edit { p: MutablePreferences -> p[REMEMBER_SEARCH_KEY] = enabled }
+        }
+    }
+
+    /** Clear recent manufacturer and strain suggestions. */
+    fun clearRecentSearches() {
+        // Clear in-memory
+        _recentManufacturers.clear()
+        _recentStrains.clear()
+        // Persist empty arrays
+        scope.launch {
+            appContext.growDataStore.edit { p: MutablePreferences ->
+                p[RECENT_MANU_KEY] = json.encodeToString(emptyList<String>())
+                p[RECENT_STRAIN_KEY] = json.encodeToString(emptyList<RecentStrain>())
+            }
+        }
+    }
 }
+
+@Serializable
+data class RecentStrain(val manufacturer: String, val strain: String)
 

@@ -110,6 +110,43 @@ object Strings {
         Language.FRENCH to "Afficher les informations système",
         Language.ITALIAN to "Mostra informazioni di sistema"
     )
+
+    // Search memory settings
+    val settings_search_memory: Map<Language, String> = mapOf(
+        Language.GERMAN to "Suchverlauf merken",
+        Language.ENGLISH to "Remember search history",
+        Language.SPANISH to "Recordar historial de búsqueda",
+        Language.FRENCH to "Mémoriser l'historique de recherche",
+        Language.ITALIAN to "Ricorda cronologia di ricerca"
+    )
+    val settings_search_memory_subtitle: Map<Language, String> = mapOf(
+        Language.GERMAN to "Vorschläge für Hersteller & Sorten",
+        Language.ENGLISH to "Suggestions for manufacturers & strains",
+        Language.SPANISH to "Sugerencias de fabricantes y cepas",
+        Language.FRENCH to "Suggestions pour fabricants et variétés",
+        Language.ITALIAN to "Suggerimenti per produttori e varietà"
+    )
+    val settings_clear_search_history: Map<Language, String> = mapOf(
+        Language.GERMAN to "Suchverlauf löschen",
+        Language.ENGLISH to "Clear search history",
+        Language.SPANISH to "Borrar historial de búsqueda",
+        Language.FRENCH to "Effacer l'historique de recherche",
+        Language.ITALIAN to "Cancella cronologia di ricerca"
+    )
+    val settings_clear_search_history_subtitle: Map<Language, String> = mapOf(
+        Language.GERMAN to "Entfernt alle Vorschläge",
+        Language.ENGLISH to "Removes all suggestions",
+        Language.SPANISH to "Elimina todas las sugerencias",
+        Language.FRENCH to "Supprime toutes les suggestions",
+        Language.ITALIAN to "Rimuove tutti i suggerimenti"
+    )
+    val settings_cleared_toast: Map<Language, String> = mapOf(
+        Language.GERMAN to "Suchverlauf gelöscht",
+        Language.ENGLISH to "Search history cleared",
+        Language.SPANISH to "Historial de búsqueda borrado",
+        Language.FRENCH to "Historique de recherche effacé",
+        Language.ITALIAN to "Cronologia di ricerca cancellata"
+    )
     val data_upload_title: Map<Language, String> = mapOf(
         Language.GERMAN to "Anonyme Bild-Uploads",
         Language.ENGLISH to "Anonymous image uploads",
@@ -303,6 +340,20 @@ object Strings {
         Language.FRENCH to "Statistiques",
         Language.ITALIAN to "Statistiche"
     )
+    val plant_statistics_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Pflanzenstatistik",
+        Language.ENGLISH to "Plant statistics",
+        Language.SPANISH to "Estadísticas de la planta",
+        Language.FRENCH to "Statistiques de la plante",
+        Language.ITALIAN to "Statistiche della pianta"
+    )
+    val energy_overview_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Energie (Pflanzen)",
+        Language.ENGLISH to "Energy (plants)",
+        Language.SPANISH to "Energía (plantas)",
+        Language.FRENCH to "Énergie (plantes)",
+        Language.ITALIAN to "Energia (piante)"
+    )
     val statistics_empty_title: Map<Language, String> = mapOf(
         Language.GERMAN to "Keine Daten verfügbar",
         Language.ENGLISH to "No data available",
@@ -392,6 +443,120 @@ object Strings {
         Language.SPANISH to "Precio de la electricidad",
         Language.FRENCH to "Prix de l'électricité",
         Language.ITALIAN to "Prezzo dell'elettricità"
+    )
+
+    // Plant-level power section
+    val power_section_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Strompreis Rechner",
+        Language.ENGLISH to "Electricity cost calculator",
+        Language.SPANISH to "Calculadora de coste eléctrico",
+        Language.FRENCH to "Calculateur de coût électrique",
+        Language.ITALIAN to "Calcolatrice costo elettrico"
+    )
+    val power_section_subtitle: Map<Language, String> = mapOf(
+        Language.GERMAN to "Preis, Watt und Licht-Zeitraum für diese Pflanze",
+        Language.ENGLISH to "Price, wattage and light period for this plant",
+        Language.SPANISH to "Precio, vatios y periodo de luz para esta planta",
+        Language.FRENCH to "Prix, wattage et période de lumière pour cette plante",
+        Language.ITALIAN to "Prezzo, wattaggio e periodo di luce per questa pianta"
+    )
+    val power_section_explainer: Map<Language, String> = mapOf(
+        Language.GERMAN to "Berechnung: Effektive Watt = Watt × Leistungsstufe. Tages-kWh = (Effektive Watt × Stunden)/1000. Kosten = kWh × Preis. Zeiträume über Mitternacht werden unterstützt.",
+        Language.ENGLISH to "Calculation: Effective watts = watts × power level. Daily kWh = (effective watts × hours)/1000. Cost = kWh × price. Periods across midnight are supported.",
+        Language.SPANISH to "Cálculo: Potencia efectiva = vatios × nivel de potencia. kWh diarios = (potencia efectiva × horas)/1000. Coste = kWh × precio. Se admiten periodos que cruzan la medianoche.",
+        Language.FRENCH to "Calcul : Puissance effective = watts × niveau de puissance. kWh/jour = (puissance effective × heures)/1000. Coût = kWh × prix. Les périodes chevauchant minuit sont prises en charge.",
+        Language.ITALIAN to "Calcolo: Watt effettivi = watt × livello di potenza. kWh/giorno = (watt effettivi × ore)/1000. Costo = kWh × prezzo. Supportati periodi oltre la mezzanotte."
+    )
+    val power_label_watt: Map<Language, String> = mapOf(
+        Language.GERMAN to "Watt",
+        Language.ENGLISH to "Watt",
+        Language.SPANISH to "Vatios",
+        Language.FRENCH to "Watt",
+        Language.ITALIAN to "Watt"
+    )
+    val power_label_light_on_from: Map<Language, String> = mapOf(
+        Language.GERMAN to "Licht an von",
+        Language.ENGLISH to "Light on from",
+        Language.SPANISH to "Luz encendida desde",
+        Language.FRENCH to "Lumière allumée de",
+        Language.ITALIAN to "Luce accesa da"
+    )
+    val power_label_light_on_to: Map<Language, String> = mapOf(
+        Language.GERMAN to "bis",
+        Language.ENGLISH to "to",
+        Language.SPANISH to "hasta",
+        Language.FRENCH to "à",
+        Language.ITALIAN to "a"
+    )
+    val power_label_percent: Map<Language, String> = mapOf(
+        Language.GERMAN to "Leistungsstufe (%)",
+        Language.ENGLISH to "Power level (%)",
+        Language.SPANISH to "Nivel de potencia (%)",
+        Language.FRENCH to "Niveau de puissance (%)",
+        Language.ITALIAN to "Livello di potenza (%)"
+    )
+    val power_stats_title: Map<Language, String> = mapOf(
+        Language.GERMAN to "Energie & Kosten",
+        Language.ENGLISH to "Energy & costs",
+        Language.SPANISH to "Energía y costes",
+        Language.FRENCH to "Énergie et coûts",
+        Language.ITALIAN to "Energia e costi"
+    )
+    val power_stats_daily_usage: Map<Language, String> = mapOf(
+        Language.GERMAN to "Verbrauch pro Tag",
+        Language.ENGLISH to "Usage per day",
+        Language.SPANISH to "Uso por día",
+        Language.FRENCH to "Consommation par jour",
+        Language.ITALIAN to "Consumo al giorno"
+    )
+    val power_stats_today_so_far: Map<Language, String> = mapOf(
+        Language.GERMAN to "Heute bisher",
+        Language.ENGLISH to "Today so far",
+        Language.SPANISH to "Hoy hasta ahora",
+        Language.FRENCH to "Aujourd'hui jusqu'à présent",
+        Language.ITALIAN to "Oggi finora"
+    )
+    val power_stats_total_to_date: Map<Language, String> = mapOf(
+        Language.GERMAN to "Gesamt bisher",
+        Language.ENGLISH to "Total to date",
+        Language.SPANISH to "Total hasta la fecha",
+        Language.FRENCH to "Total à ce jour",
+        Language.ITALIAN to "Totale ad oggi"
+    )
+    val power_stats_daily_cost: Map<Language, String> = mapOf(
+        Language.GERMAN to "Kosten pro Tag",
+        Language.ENGLISH to "Cost per day",
+        Language.SPANISH to "Coste por día",
+        Language.FRENCH to "Coût par jour",
+        Language.ITALIAN to "Costo al giorno"
+    )
+    val power_stats_weekly: Map<Language, String> = mapOf(
+        Language.GERMAN to "Woche",
+        Language.ENGLISH to "Week",
+        Language.SPANISH to "Semana",
+        Language.FRENCH to "Semaine",
+        Language.ITALIAN to "Settimana"
+    )
+    val power_stats_monthly: Map<Language, String> = mapOf(
+        Language.GERMAN to "Monat",
+        Language.ENGLISH to "Month",
+        Language.SPANISH to "Mes",
+        Language.FRENCH to "Mois",
+        Language.ITALIAN to "Mese"
+    )
+    val power_stats_yearly: Map<Language, String> = mapOf(
+        Language.GERMAN to "Jahr",
+        Language.ENGLISH to "Year",
+        Language.SPANISH to "Año",
+        Language.FRENCH to "Année",
+        Language.ITALIAN to "Anno"
+    )
+    val power_stats_effective_watt: Map<Language, String> = mapOf(
+        Language.GERMAN to "Effektive Leistung",
+        Language.ENGLISH to "Effective power",
+        Language.SPANISH to "Potencia efectiva",
+        Language.FRENCH to "Puissance effective",
+        Language.ITALIAN to "Potenza effettiva"
     )
 
     // Overall stats section

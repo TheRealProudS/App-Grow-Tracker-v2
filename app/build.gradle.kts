@@ -21,8 +21,8 @@ android {
         applicationId = "com.growtracker.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-    versionName = "1.0.2"
+        versionCode = 4
+    versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -222,7 +222,7 @@ extensions.findByName("firebaseAppDistribution")?.let {
     val appIdProp = project.findProperty("APP_DIST_APP_ID") as String?
     val testersProp = project.findProperty("APP_DIST_TESTERS") as String? // comma-separated emails
     val groupsProp = project.findProperty("APP_DIST_GROUPS") as String?   // comma-separated group aliases
-    val releaseNotesProp = project.findProperty("APP_DIST_RELEASE_NOTES") as String? ?: "BETA-Version 1.0.2"
+    val releaseNotesProp = project.findProperty("APP_DIST_RELEASE_NOTES") as String? ?: "BETA-Version 1.0.3"
     val artifactPathProp = project.findProperty("APP_DIST_ARTIFACT") as String? // optional override
 
     it.apply {

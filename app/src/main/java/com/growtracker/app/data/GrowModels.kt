@@ -18,7 +18,9 @@ data class Growbox(
     val lightPower: String = "",
     val isActive: Boolean = true,
     val plants: List<Plant> = emptyList(),
-    val lightingSettings: LightingSettings = LightingSettings()
+    val lightingSettings: LightingSettings = LightingSettings(),
+    // Optional shared devices (e.g., Abluft/Lüftung) for this growbox
+    val devices: List<PowerDevice> = emptyList()
 )
 
 @Serializable
@@ -68,6 +70,12 @@ data class Plant(
     val plantingDate: Long = System.currentTimeMillis(),
     val lightType: String? = null,
     val lightWatt: Int? = null,
+    // Optional dimming level for the lamp in percent (0..100). If null, treated as 100%.
+    val lightPowerPercent: Int? = null,
+    // Per-plant energy settings for electricity cost calculator
+    val electricityPrice: Double? = null, // EUR per kWh
+    val lightOnStartMinutes: Int? = null, // minutes since midnight (0..1439)
+    val lightOnEndMinutes: Int? = null,   // minutes since midnight (can be <= start to indicate crossing midnight)
     val floweringStartDate: Long? = null,
     val harvestDate: Long? = null,
     val dryingStartDate: Long? = null,
@@ -80,7 +88,9 @@ data class Plant(
     val preferredFertilizerManufacturer: String? = null,
     val potSize: PotSize = PotSize.MEDIUM,
     val customPotSize: String? = null, // Custom pot size in liters, e.g., "5.5L"
-    val photos: List<PlantPhoto> = emptyList() // List of plant photos
+    val photos: List<PlantPhoto> = emptyList(), // List of plant photos
+    // Optional per-plant devices (e.g., Clip-Ventilator, Umluft)
+    val devices: List<PowerDevice> = emptyList()
 )
 
 @Serializable
@@ -215,4 +225,25 @@ data class ElectricityCosts(
     val weeklyCost: Double,
     val monthlyCost: Double,
     val yearlyCost: Double
+)
+
+@Serializable
+enum class DeviceType { LAMP, FAN, VENTILATION, HEATER, HUMIDIFIER, DEHUMIDIFIER, PUMP, OTHER }
+
+@Serializable
+enum class DeviceScheduleType { ALWAYS_ON, WINDOW, DUTY_CYCLE }
+
+@Serializable
+data class PowerDevice(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val name: String = "",
+    val type: DeviceType = DeviceType.OTHER,
+    val watt: Int? = null,
+    // Optional dimming/level in percent (0..100), default 100
+    val powerPercent: Int? = 100,
+    // How this device runs: always on, fixed window, or duty-cycle percent of day
+    val scheduleType: DeviceScheduleType = DeviceScheduleType.ALWAYS_ON,
+    val startMinutes: Int? = null, // for WINDOW: minutes since midnight
+    val endMinutes: Int? = null,   // for WINDOW
+    val dutyCyclePercent: Int? = null // for DUTY_CYCLE: 0..100
 )

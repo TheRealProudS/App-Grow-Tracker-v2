@@ -5,6 +5,10 @@ package com.growtracker.app.ui.statistics
 import com.growtracker.app.data.EntryType
 import com.growtracker.app.data.GrowDataManager
 import com.growtracker.app.data.Growbox
+import com.growtracker.app.data.Plant
+import com.growtracker.app.data.PowerDevice
+import com.growtracker.app.data.DeviceScheduleType
+import com.growtracker.app.data.DeviceType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,6 +49,8 @@ fun StatisticsScreen(
     val context = LocalContext.current
     val dataManager = remember { GrowDataManager(context) }
     val growboxes = remember { dataManager.loadGrowboxes() }
+    // Also observe plants from GrowDataStore so energy stats are visible even without growboxes
+    val plantsGlobal = com.growtracker.app.ui.grow.GrowDataStore.plants
     
     Column(
         modifier = Modifier
@@ -74,37 +80,62 @@ fun StatisticsScreen(
         )
         
         if (growboxes.isEmpty()) {
-            // Empty state
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.BarChart,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = getString(Strings.statistics_empty_title, languageManager),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = getString(Strings.statistics_empty_subtitle, languageManager),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
-                )
+            // If no growboxes persisted, still show global energy stats for all plants from GrowDataStore
+            if (plantsGlobal.isEmpty()) {
+                // True empty state
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.BarChart,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = getString(Strings.statistics_empty_title, languageManager),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = getString(Strings.statistics_empty_subtitle, languageManager),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        EnergyOverviewCard(plants = plantsGlobal, languageManager = languageManager)
+                    }
+                    item { Spacer(Modifier.height(8.dp)) }
+                    item {
+                        Text(text = getString(Strings.plant_statistics_title, languageManager), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    }
+                    items(plantsGlobal, key = { it.id }) { plant ->
+                        PlantEnergyStatRow(plant = plant, languageManager = languageManager)
+                    }
+                }
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Add per-second Energy Overview even when growboxes exist
+                item {
+                    val allPlants = remember(growboxes) { growboxes.flatMap { it.plants } }
+                    EnergyOverviewCard(plants = allPlants, languageManager = languageManager)
+                }
+                item { Spacer(Modifier.height(8.dp)) }
                 items(growboxes, key = { it.id }) { growbox ->
                     GrowboxStatisticsCard(growbox = growbox, languageManager = languageManager)
                 }
@@ -214,7 +245,231 @@ fun GrowboxStatisticsCard(
                 growbox = growbox,
                 languageManager = languageManager
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            // Plant-level energy summary (distinct and visible)
+            EnergyOverviewCard(plants = growbox.plants, languageManager = languageManager)
+
+            Spacer(modifier = Modifier.height(12.dp))
+            // Plant-level energy statistics under the same section (water & fertilizer peer)
+            if (growbox.plants.isNotEmpty()) {
+                Text(text = getString(Strings.plant_statistics_title, languageManager), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    growbox.plants.forEach { plant ->
+                        PlantEnergyStatRow(plant = plant, languageManager = languageManager)
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun EnergyOverviewCard(plants: List<Plant>, languageManager: LanguageManager) {
+    // Ticker that triggers recomposition every second
+    val now = rememberNowTicker()
+
+    // Compute aggregates every second based on current time and devices
+    var dKwh = 0.0
+    var tKwh = 0.0
+    var totKwh = 0.0
+    var tCost = 0.0
+    var totCost = 0.0
+    plants.forEach { plant ->
+        val price = plant.electricityPrice
+        val startBase = plant.germinationDate ?: plant.plantingDate
+        val ts = plant.harvestDate?.let { kotlin.math.min(now, it) } ?: now
+        if (ts < startBase) return@forEach
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = ts }
+        val secondOfDay = cal.get(java.util.Calendar.HOUR_OF_DAY) * 3600 + cal.get(java.util.Calendar.MINUTE) * 60 + cal.get(java.util.Calendar.SECOND)
+        plant.devices.forEach { dev ->
+            val w = dev.watt ?: return@forEach
+            val effWatt = w * ((dev.powerPercent ?: 100).coerceIn(0, 100) / 100.0)
+            val dSec = deviceDailySeconds(dev)
+            val dHours = dSec / 3600.0
+            val d = (effWatt * dHours) / 1000.0
+            dKwh += d
+            // today so far
+            val onSoFarSec = deviceSecondsSoFar(dev, secondOfDay)
+            val hSoFar = onSoFarSec / 3600.0
+            val kSoFar = (effWatt * hSoFar) / 1000.0
+            tKwh += kSoFar
+            if (price != null) tCost += kSoFar * price
+            // total to date
+            val daysActive = fullDaysBetween(startBase, ts)
+            val tot = d * daysActive + kSoFar
+            totKwh += tot
+            if (price != null) totCost += tot * price
+        }
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.ElectricalServices, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                Spacer(Modifier.width(8.dp))
+                Text(getString(Strings.energy_overview_title, languageManager), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                Spacer(Modifier.weight(1f))
+                LiveIndicator(nowTick = now)
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("${String.format("%.2f", tKwh)} kWh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    Text(getString(Strings.power_stats_today_so_far, languageManager), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f))
+                    Text("${String.format("%.2f", tCost)} €", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f))
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("${String.format("%.2f", totKwh)} kWh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    Text(getString(Strings.power_stats_total_to_date, languageManager), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f))
+                    Text("${String.format("%.2f", totCost)} €", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f))
+                }
+            }
+            // Small footer summary of daily consumption across plants
+            Text("${getString(Strings.power_stats_daily_usage, languageManager)}: ${String.format("%.2f", dKwh)} kWh", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f))
+        }
+    }
+}
+
+private fun fullDaysBetween(startMillis: Long, endMillis: Long): Int {
+    if (endMillis <= startMillis) return 0
+    val calStart = java.util.Calendar.getInstance().apply { timeInMillis = startMillis; set(java.util.Calendar.HOUR_OF_DAY,0); set(java.util.Calendar.MINUTE,0); set(java.util.Calendar.SECOND,0); set(java.util.Calendar.MILLISECOND,0) }
+    val calEnd = java.util.Calendar.getInstance().apply { timeInMillis = endMillis; set(java.util.Calendar.HOUR_OF_DAY,0); set(java.util.Calendar.MINUTE,0); set(java.util.Calendar.SECOND,0); set(java.util.Calendar.MILLISECOND,0) }
+    val diff = calEnd.timeInMillis - calStart.timeInMillis
+    return (diff / (24L*60*60*1000L)).toInt().coerceAtLeast(0)
+}
+
+@Composable
+private fun PlantEnergyStatRow(plant: Plant, languageManager: LanguageManager) {
+    val price = plant.electricityPrice
+    val now = rememberNowTicker()
+    val startBase = plant.germinationDate ?: plant.plantingDate
+    val ts = plant.harvestDate?.let { kotlin.math.min(now, it) } ?: now
+    if (ts < startBase) return
+    // Daily kWh from devices only
+    var dailyKwh = 0.0
+    plant.devices.forEach { dev ->
+        val w = dev.watt ?: return@forEach
+        val eff = w * ((dev.powerPercent ?: 100).coerceIn(0, 100) / 100.0)
+        val dSec = deviceDailySeconds(dev)
+        dailyKwh += (eff * (dSec / 3600.0)) / 1000.0
+    }
+
+    val cal = java.util.Calendar.getInstance().apply { timeInMillis = ts }
+    val secondOfDay = cal.get(java.util.Calendar.HOUR_OF_DAY) * 3600 + cal.get(java.util.Calendar.MINUTE) * 60 + cal.get(java.util.Calendar.SECOND)
+    var kwhSoFar = 0.0
+    plant.devices.forEach { dev ->
+        val w = dev.watt ?: return@forEach
+        val eff = w * ((dev.powerPercent ?: 100).coerceIn(0, 100) / 100.0)
+        val onSoFarSec = deviceSecondsSoFar(dev, secondOfDay)
+        val hoursSoFar = onSoFarSec / 3600.0
+        kwhSoFar += (eff * hoursSoFar) / 1000.0
+    }
+    val costSoFar = if (price != null) kwhSoFar * price else 0.0
+
+    val daysActive = fullDaysBetween(startBase, ts)
+    val totalKwh = dailyKwh * daysActive + kwhSoFar
+    val totalCost = if (price != null) totalKwh * price else 0.0
+
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))) {
+        Column(Modifier.padding(12.dp)) {
+            Text(plant.name.ifBlank { plant.strain.ifBlank { plant.manufacturer.ifBlank { "—" } } }, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("${String.format("%.2f", kwhSoFar)} kWh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(getString(Strings.power_stats_today_so_far, languageManager), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${String.format("%.2f", costSoFar)} €", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("${String.format("%.2f", totalKwh)} kWh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(getString(Strings.power_stats_total_to_date, languageManager), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${String.format("%.2f", totalCost)} €", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("${getString(Strings.power_stats_daily_usage, languageManager)}: ${String.format("%.2f", dailyKwh)} kWh", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun rememberNowTicker(periodMs: Long = 1000L): Long {
+    val state = remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(periodMs) {
+        while (true) {
+            kotlinx.coroutines.delay(periodMs)
+            state.value = System.currentTimeMillis()
+        }
+    }
+    return state.value
+}
+
+private fun secondsOnSoFarToday(secondOfDay: Int, startMin: Int, endMin: Int): Int {
+    val startSec = startMin * 60
+    val endSec = endMin * 60
+    return if (endSec >= startSec) {
+        when {
+            secondOfDay <= startSec -> 0
+            secondOfDay >= endSec -> endSec - startSec
+            else -> secondOfDay - startSec
+        }
+    } else { // crosses midnight
+        val part1 = if (secondOfDay >= startSec) secondOfDay - startSec else 0
+        val part2 = if (secondOfDay <= endSec) secondOfDay else endSec
+        part1 + part2
+    }
+}
+
+private fun deviceDailySeconds(dev: PowerDevice): Double {
+    return when (dev.scheduleType) {
+        DeviceScheduleType.ALWAYS_ON -> 24.0 * 3600.0
+        DeviceScheduleType.WINDOW ->
+            if (dev.startMinutes != null && dev.endMinutes != null)
+                secondsOnSoFarToday(24 * 3600, dev.startMinutes, dev.endMinutes).toDouble()
+            else 0.0
+        DeviceScheduleType.DUTY_CYCLE -> ((dev.dutyCyclePercent ?: 0).coerceIn(0, 100) / 100.0) * 24.0 * 3600.0
+    }
+}
+
+private fun deviceSecondsSoFar(dev: PowerDevice, secondOfDay: Int): Int {
+    return when (dev.scheduleType) {
+        DeviceScheduleType.ALWAYS_ON -> secondOfDay
+        DeviceScheduleType.WINDOW -> if (dev.startMinutes != null && dev.endMinutes != null)
+            secondsOnSoFarToday(secondOfDay, dev.startMinutes, dev.endMinutes) else 0
+        DeviceScheduleType.DUTY_CYCLE -> ((dev.dutyCyclePercent ?: 0).coerceIn(0, 100) * secondOfDay) / 100
+    }
+}
+
+private fun minutesOnSoFarToday(minuteOfDay: Int, start: Int, end: Int): Int {
+    return if (end >= start) {
+        when {
+            minuteOfDay <= start -> 0
+            minuteOfDay >= end -> end - start
+            else -> minuteOfDay - start
+        }
+    } else { // crosses midnight
+        // On-window = [start..1440) U [0..end)
+        val part1 = if (minuteOfDay >= start) minuteOfDay - start else 0
+        val part2 = if (minuteOfDay <= end) minuteOfDay else end
+        part1 + part2
+    }
+}
+
+@Composable
+private fun LiveIndicator(nowTick: Long) {
+    val on = ((nowTick / 1000L) % 2L) == 0L
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(RoundedCornerShape(50))
+                .background(if (on) Color.Red else Color.Red.copy(alpha = 0.25f))
+        )
+        Spacer(Modifier.width(6.dp))
+        Text("LIVE", style = MaterialTheme.typography.labelSmall, color = if (on) Color.Red else MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f))
     }
 }
 

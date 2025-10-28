@@ -47,6 +47,9 @@ import com.growtracker.app.data.EntryType
 import com.growtracker.app.data.Plant
 import com.growtracker.app.data.PlantEntry
 import com.growtracker.app.data.FertilizerProduct
+import com.growtracker.app.data.PowerDevice
+import com.growtracker.app.data.DeviceType
+import com.growtracker.app.data.DeviceScheduleType
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -859,9 +862,25 @@ private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -
     var preferredFert by remember { mutableStateOf(plant.preferredFertilizerManufacturer ?: "") }
     var potLiters by remember { mutableStateOf(plant.customPotSize ?: "") }
     var fertExpanded by remember { mutableStateOf(false) }
+    // Power settings state
+    var priceText by remember { mutableStateOf(plant.electricityPrice?.let { String.format(Locale.getDefault(), "%.2f", it) } ?: "") }
+    // Removed legacy lamp config from plant-level settings (watt, percent, time window)
+    // Devices state (per-plant)
+    val devicesState = remember { mutableStateListOf<PowerDevice>().apply { addAll(plant.devices) } }
+    var deviceEditorOpen by remember { mutableStateOf(false) }
+    var editingDeviceIndex by remember { mutableStateOf<Int?>(null) }
+    val ctx = LocalContext.current
+    fun formatHm(mins: Int?): String = mins?.let { String.format(Locale.getDefault(), "%02d:%02d", it / 60, it % 60) } ?: "--:--"
+    fun pickTime(initial: Int?, onSet: (Int) -> Unit) {
+        val initH = (initial ?: 18 * 60) / 60
+        val initM = (initial ?: 18 * 60) % 60
+        android.app.TimePickerDialog(ctx, { _, h, m -> onSet(h * 60 + m) }, initH, initM, true).show()
+    }
 
     AlertDialog(onDismissRequest = onClose, title = { Text(getString(com.growtracker.app.ui.language.GrowStrings.edit_plant_title)) }, text = {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Make settings scrollable to fit on small screens
+        androidx.compose.foundation.lazy.LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.heightIn(max = 520.dp)) {
+            item {
             // Preferred fertilizer manufacturer dropdown
             val manufacturers = com.growtracker.app.data.getFertilizerManufacturers()
             OutlinedTextField(
@@ -889,50 +908,160 @@ private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -
                 placeholder = { Text("z.B. 5.5") },
                 modifier = Modifier.fillMaxWidth()
             )
+            }
+            item {
 
-            // Bloom controls
-            Spacer(Modifier.height(8.dp))
-            Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_section_title), style = MaterialTheme.typography.titleSmall)
-            if (plant.floweringStartDate == null) {
-                Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_not_started), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = {
-                    // Use the currently selected calendar day as day 1; normalize to midnight.
-                    val start = selectedDate ?: kotlin.run {
-                        val cal = java.util.Calendar.getInstance().apply {
-                            set(java.util.Calendar.HOUR_OF_DAY, 0)
-                            set(java.util.Calendar.MINUTE, 0)
-                            set(java.util.Calendar.SECOND, 0)
-                            set(java.util.Calendar.MILLISECOND, 0)
+            // Divider before power section
+            HorizontalDivider()
+            Text(text = getString(com.growtracker.app.ui.language.Strings.power_section_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(text = getString(com.growtracker.app.ui.language.Strings.power_section_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Explainer removed per request
+
+            // Electricity price
+            OutlinedTextField(
+                value = priceText,
+                onValueChange = { v -> priceText = v.filter { it.isDigit() || it == '.' || it == ',' }.replace(',', '.') },
+                label = { Text(getString(com.growtracker.app.ui.language.Strings.power_label_price)) },
+                placeholder = { Text("0.30") },
+                trailingIcon = { Text("€/kWh", style = MaterialTheme.typography.labelSmall) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Removed plant-level lamp watt/percent/time. Use devices below instead.
+            }
+            // Devices section
+            item {
+                Spacer(Modifier.height(8.dp))
+                Text("Geräte", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                if (devicesState.isEmpty()) {
+                    Text("Keine Geräte hinzugefügt", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    // Pretty, sortable list with inline power slider
+                    val orderOf: (DeviceType) -> Int = {
+                        when (it) {
+                            DeviceType.LAMP -> 0
+                            DeviceType.FAN -> 1
+                            DeviceType.HEATER -> 2
+                            DeviceType.HUMIDIFIER -> 3
+                            DeviceType.DEHUMIDIFIER -> 4
+                            else -> 5
                         }
-                        cal.timeInMillis
                     }
-                    val updated = plant.copy(floweringStartDate = start)
-                    onUpdate(updated)
-                }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_start_on_selected)) }
-            } else {
-                val days = bloomDays(plant) ?: 0
-                val remaining = daysToHarvest(plant)
-                val info = buildString {
-                    append("Seit ")
-                    append(days)
-                    append(" ")
-                    append(getString(com.growtracker.app.ui.language.GrowStrings.days_suffix))
-                    append(" in ")
-                    append(getString(com.growtracker.app.ui.language.GrowStrings.bloom_section_title))
-                    if (remaining != null) {
-                        append(" · ")
-                        append(getString(com.growtracker.app.ui.language.GrowStrings.eta_prefix))
-                        append(remaining)
-                        append(" ")
-                        append(getString(com.growtracker.app.ui.language.GrowStrings.eta_days_to_harvest))
+                    val viewList = devicesState.sortedWith(compareBy({ orderOf(it.type) }, { it.name }, { it.watt ?: Int.MAX_VALUE }))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        viewList.forEach { dev ->
+                            val idx = devicesState.indexOfFirst { it.id == dev.id }
+                            if (idx < 0) return@forEach
+                            Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(12.dp)) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Filled.ElectricalServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                            Spacer(Modifier.width(10.dp))
+                                            val typeLabel = when (dev.type) {
+                                                DeviceType.LAMP -> "Lampe"
+                                                DeviceType.FAN -> "Ventilator"
+                                                DeviceType.HEATER -> "Heizung"
+                                                DeviceType.HUMIDIFIER -> "Luftbefeuchter"
+                                                DeviceType.DEHUMIDIFIER -> "Entfeuchter"
+                                                DeviceType.VENTILATION -> "Ventilation"
+                                                DeviceType.PUMP -> "Pumpe"
+                                                DeviceType.OTHER -> "Sonstige"
+                                            }
+                                            Text(dev.name.ifBlank { typeLabel }, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                        }
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            IconButton(onClick = { editingDeviceIndex = idx; deviceEditorOpen = true }) { Icon(Icons.Filled.Edit, contentDescription = "Bearbeiten") }
+                                            IconButton(onClick = { devicesState.removeAt(idx) }) { Icon(Icons.Filled.Delete, contentDescription = "Löschen") }
+                                        }
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    // Secondary info: watt + window
+                                    val pct = (dev.powerPercent ?: 100).coerceIn(0, 100)
+                                    val wattStr = dev.watt?.let { "$it W" } ?: "—"
+                                    val sched = when (dev.scheduleType) {
+                                        DeviceScheduleType.ALWAYS_ON -> "Immer an"
+                                        DeviceScheduleType.WINDOW -> {
+                                            val s = formatHm(dev.startMinutes)
+                                            val e = formatHm(dev.endMinutes)
+                                            "$s–$e"
+                                        }
+                                        DeviceScheduleType.DUTY_CYCLE -> "Duty ${dev.dutyCyclePercent ?: 0}%"
+                                    }
+                                    Text("$wattStr • $sched", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Spacer(Modifier.height(6.dp))
+                                    // Inline power slider
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Leistung", style = MaterialTheme.typography.labelMedium)
+                                        Text("$pct%", style = MaterialTheme.typography.labelMedium)
+                                    }
+                                    Slider(
+                                        value = pct.toFloat(),
+                                        onValueChange = { v ->
+                                            val newPct = v.toInt().coerceIn(0, 100)
+                                            devicesState[idx] = devicesState[idx].copy(powerPercent = newPct)
+                                        },
+                                        valueRange = 0f..100f,
+                                        steps = 99
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-                Text(info, style = MaterialTheme.typography.bodySmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.height(6.dp))
+                OutlinedButton(onClick = { editingDeviceIndex = null; deviceEditorOpen = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Gerät hinzufügen")
+                }
+            }
+            item {
+                // Bloom controls
+                Spacer(Modifier.height(8.dp))
+                Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_section_title), style = MaterialTheme.typography.titleSmall)
+                if (plant.floweringStartDate == null) {
+                    Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_not_started), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     TextButton(onClick = {
-                        val updated = plant.copy(floweringStartDate = null)
+                        // Use the currently selected calendar day as day 1; normalize to midnight.
+                        val start = selectedDate ?: kotlin.run {
+                            val cal = java.util.Calendar.getInstance().apply {
+                                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                                set(java.util.Calendar.MINUTE, 0)
+                                set(java.util.Calendar.SECOND, 0)
+                                set(java.util.Calendar.MILLISECOND, 0)
+                            }
+                            cal.timeInMillis
+                        }
+                        val updated = plant.copy(floweringStartDate = start)
                         onUpdate(updated)
-                    }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_reset)) }
+                    }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_start_on_selected)) }
+                } else {
+                    val days = bloomDays(plant) ?: 0
+                    val remaining = daysToHarvest(plant)
+                    val info = buildString {
+                        append("Seit ")
+                        append(days)
+                        append(" ")
+                        append(getString(com.growtracker.app.ui.language.GrowStrings.days_suffix))
+                        append(" in ")
+                        append(getString(com.growtracker.app.ui.language.GrowStrings.bloom_section_title))
+                        if (remaining != null) {
+                            append(" · ")
+                            append(getString(com.growtracker.app.ui.language.GrowStrings.eta_prefix))
+                            append(remaining)
+                            append(" ")
+                            append(getString(com.growtracker.app.ui.language.GrowStrings.eta_days_to_harvest))
+                        }
+                    }
+                    Text(info, style = MaterialTheme.typography.bodySmall)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = {
+                            val updated = plant.copy(floweringStartDate = null)
+                            onUpdate(updated)
+                        }) { Text(getString(com.growtracker.app.ui.language.GrowStrings.bloom_reset)) }
+                    }
                 }
             }
         }
@@ -940,7 +1069,12 @@ private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -
             TextButton(onClick = {
             val updated = plant.copy(
                 preferredFertilizerManufacturer = preferredFert.takeIf { it.isNotBlank() },
-                customPotSize = potLiters.takeIf { it.isNotBlank() }
+                customPotSize = potLiters.takeIf { it.isNotBlank() },
+                electricityPrice = when {
+                    priceText.isBlank() -> null
+                    else -> priceText.toDoubleOrNull() ?: plant.electricityPrice
+                },
+                devices = devicesState.toList()
             )
             onUpdate(updated)
             onClose()
@@ -952,4 +1086,181 @@ private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -
             TextButton(onClick = onClose) { Text(getString(com.growtracker.app.ui.language.GrowStrings.generic_cancel)) }
         }
     })
+
+    // Device editor dialog overlay
+    DeviceEditorHost(
+        open = deviceEditorOpen,
+        editingDeviceIndex = editingDeviceIndex,
+        devicesState = devicesState,
+        onClose = { deviceEditorOpen = false; editingDeviceIndex = null }
+    )
 }
+
+@Composable
+private fun DeviceEditorDialog(
+    initial: PowerDevice?,
+    onDismiss: () -> Unit,
+    onSave: (PowerDevice) -> Unit
+) {
+    var type by remember { mutableStateOf(initial?.type ?: DeviceType.OTHER) }
+    var typeMenu by remember { mutableStateOf(false) }
+    var wattText by remember { mutableStateOf(initial?.watt?.toString() ?: "") }
+    var powerPercent by remember { mutableStateOf((initial?.powerPercent ?: 100).coerceIn(0, 100)) }
+    var startMinutes by remember { mutableStateOf(initial?.startMinutes) }
+    var endMinutes by remember { mutableStateOf(initial?.endMinutes) }
+    var alwaysOn by remember { mutableStateOf(initial?.scheduleType == DeviceScheduleType.ALWAYS_ON) }
+
+    val ctx = LocalContext.current
+    fun formatHm(mins: Int?): String = mins?.let { String.format(Locale.getDefault(), "%02d:%02d", it / 60, it % 60) } ?: "--:--"
+    fun pickTime(initial: Int?, onSet: (Int) -> Unit) {
+        val initH = (initial ?: 12 * 60) / 60
+        val initM = (initial ?: 12 * 60) % 60
+        android.app.TimePickerDialog(ctx, { _, h, m -> onSet(h * 60 + m) }, initH, initM, true).show()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Gerät konfigurieren") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Type selector
+                OutlinedTextField(
+                    value = when (type) {
+                        DeviceType.LAMP -> "Lampe"
+                        DeviceType.FAN -> "Ventilator"
+                        DeviceType.HEATER -> "Heizung"
+                        DeviceType.HUMIDIFIER -> "Luftbefeuchter"
+                        DeviceType.DEHUMIDIFIER -> "Entfeuchter"
+                        else -> "Sonstige"
+                    },
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Gerät") },
+                    leadingIcon = { Icon(Icons.Filled.ElectricalServices, contentDescription = null) },
+                    trailingIcon = { IconButton(onClick = { typeMenu = true }) { Icon(Icons.Filled.ArrowDropDown, contentDescription = null) } },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                DropdownMenu(expanded = typeMenu, onDismissRequest = { typeMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.ElectricalServices, null); Spacer(Modifier.width(8.dp)); Text("Lampe") } },
+                        onClick = { type = DeviceType.LAMP; typeMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.ElectricalServices, null); Spacer(Modifier.width(8.dp)); Text("Ventilator") } },
+                        onClick = { type = DeviceType.FAN; typeMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.ElectricalServices, null); Spacer(Modifier.width(8.dp)); Text("Lüfter") } },
+                        onClick = { type = DeviceType.FAN; typeMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.ElectricalServices, null); Spacer(Modifier.width(8.dp)); Text("Heizung") } },
+                        onClick = { type = DeviceType.HEATER; typeMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.ElectricalServices, null); Spacer(Modifier.width(8.dp)); Text("Luftbefeuchter") } },
+                        onClick = { type = DeviceType.HUMIDIFIER; typeMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.ElectricalServices, null); Spacer(Modifier.width(8.dp)); Text("Entfeuchter") } },
+                        onClick = { type = DeviceType.DEHUMIDIFIER; typeMenu = false }
+                    )
+                    DropdownMenuItem(
+                        text = { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Filled.ElectricalServices, null); Spacer(Modifier.width(8.dp)); Text("Sonstige") } },
+                        onClick = { type = DeviceType.OTHER; typeMenu = false }
+                    )
+                }
+                OutlinedTextField(value = wattText, onValueChange = { wattText = it.filter { ch -> ch.isDigit() } }, label = { Text("Watt") }, trailingIcon = { Text("W") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                // Power percent
+                Column {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Leistung")
+                        Text("$powerPercent%", style = MaterialTheme.typography.labelMedium)
+                    }
+                    Slider(value = powerPercent.toFloat(), onValueChange = { powerPercent = it.toInt().coerceIn(0, 100) }, valueRange = 0f..100f, steps = 99)
+                }
+                // Immer an Toggle
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Immer an")
+                    Switch(checked = alwaysOn, onCheckedChange = { checked ->
+                        alwaysOn = checked
+                        if (checked) {
+                            // set to full day
+                            startMinutes = 0
+                            endMinutes = 24 * 60
+                        }
+                    })
+                }
+                if (!alwaysOn) {
+                    // Laufzeit: Von - Bis
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(value = formatHm(startMinutes), onValueChange = {}, readOnly = true, label = { Text("Von") }, trailingIcon = { IconButton(onClick = { pickTime(startMinutes) { startMinutes = it } }) { Icon(Icons.Filled.Schedule, contentDescription = null) } }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = formatHm(endMinutes), onValueChange = {}, readOnly = true, label = { Text("Bis") }, trailingIcon = { IconButton(onClick = { pickTime(endMinutes) { endMinutes = it } }) { Icon(Icons.Filled.Schedule, contentDescription = null) } }, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val dev = PowerDevice(
+                    name = "",
+                    type = type,
+                    watt = wattText.toIntOrNull(),
+                    powerPercent = powerPercent,
+                    scheduleType = if (alwaysOn) DeviceScheduleType.ALWAYS_ON else DeviceScheduleType.WINDOW,
+                    startMinutes = if (alwaysOn) 0 else startMinutes,
+                    endMinutes = if (alwaysOn) 24 * 60 else endMinutes,
+                    dutyCyclePercent = null
+                )
+                onSave(dev)
+                onDismiss()
+            }) { Text("Speichern") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } }
+    )
+}
+
+// Render the device editor dialog when requested (helper within settings scope)
+@Composable
+private fun DeviceEditorHost(
+    open: Boolean,
+    editingDeviceIndex: Int?,
+    devicesState: androidx.compose.runtime.snapshots.SnapshotStateList<PowerDevice>,
+    onClose: () -> Unit
+) {
+    if (!open) return
+    val initial = editingDeviceIndex?.let { idx -> devicesState.getOrNull(idx) }
+    DeviceEditorDialog(initial = initial, onDismiss = onClose) { dev ->
+        if (editingDeviceIndex != null && editingDeviceIndex in devicesState.indices) {
+            devicesState[editingDeviceIndex] = dev
+        } else {
+            devicesState.add(dev)
+        }
+    }
+}
+
+
+@Composable
+private fun EnergyCostsCard(plant: Plant, costs: com.growtracker.app.data.ElectricityCosts) {
+    Card(shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(getString(com.growtracker.app.ui.language.Strings.power_stats_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            val minutes = dailyLightMinutes(plant.lightOnStartMinutes, plant.lightOnEndMinutes) ?: 0
+            val hours = minutes / 60.0
+            val baseW = (plant.lightWatt ?: 0)
+            val percent = (plant.lightPowerPercent ?: 100).coerceIn(0, 100)
+            val effW = baseW * (percent / 100.0)
+            val kwh = effW * hours / 1000.0
+            Text("${getString(com.growtracker.app.ui.language.Strings.power_stats_daily_usage)}: ${String.format(Locale.getDefault(), "%.2f", kwh)} kWh")
+            Text("${getString(com.growtracker.app.ui.language.Strings.power_stats_daily_cost)}: ${String.format(Locale.getDefault(), "%.2f", costs.dailyCost)} €")
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("${getString(com.growtracker.app.ui.language.Strings.power_stats_weekly)}: ${String.format(Locale.getDefault(), "%.2f", costs.weeklyCost)} €")
+                Text("${getString(com.growtracker.app.ui.language.Strings.power_stats_monthly)}: ${String.format(Locale.getDefault(), "%.2f", costs.monthlyCost)} €")
+                Text("${getString(com.growtracker.app.ui.language.Strings.power_stats_yearly)}: ${String.format(Locale.getDefault(), "%.2f", costs.yearlyCost)} €")
+            }
+            Text("${getString(com.growtracker.app.ui.language.Strings.power_stats_effective_watt)}: ${String.format(Locale.getDefault(), "%.0f", effW)} W (${percent}%)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+// PlantStatisticsSection removed: per requirement, stats appear on main Statistics screen.

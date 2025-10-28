@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.growtracker.app.data.Plant
+import com.growtracker.app.data.ElectricityCosts
 
 @Composable
 fun PhasePill(phase: String, age: String) {
@@ -73,4 +74,36 @@ fun daysToHarvest(plant: Plant): Int? {
     val started = bloomDays(plant) ?: return null
     val rem = expectedBloomDays(plant) - started
     return rem.coerceAtLeast(0)
+}
+
+/**
+ * Calculate minutes of light per day based on a start and end minute-of-day window.
+ * Supports windows that cross midnight (e.g., 18:00 -> 12:00 next day).
+ */
+fun dailyLightMinutes(startMinutes: Int?, endMinutes: Int?): Int? {
+    if (startMinutes == null || endMinutes == null) return null
+    val s = startMinutes.coerceIn(0, 23 * 60 + 59)
+    val e = endMinutes.coerceIn(0, 23 * 60 + 59)
+    return if (e >= s) e - s else (24 * 60 - s + e)
+}
+
+/**
+ * Compute electricity consumption and costs for a plant if settings are present.
+ * Returns null if required inputs are missing (wattage, price, light window).
+ */
+fun computeElectricityCostsForPlant(plant: Plant): ElectricityCosts? {
+    val wattBase = plant.lightWatt ?: return null
+    val price = plant.electricityPrice ?: return null
+    val minutes = dailyLightMinutes(plant.lightOnStartMinutes, plant.lightOnEndMinutes) ?: return null
+    val hours = minutes / 60.0
+    val percent = (plant.lightPowerPercent ?: 100).coerceIn(0, 100)
+    val effectiveWatt = wattBase * (percent / 100.0)
+    val dailyKwh = (effectiveWatt * hours) / 1000.0
+    val dailyCost = dailyKwh * price
+    return ElectricityCosts(
+        dailyCost = dailyCost,
+        weeklyCost = dailyCost * 7.0,
+        monthlyCost = dailyCost * 30.0,
+        yearlyCost = dailyCost * 365.0
+    )
 }

@@ -270,6 +270,29 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
+                        // Show recent manufacturer suggestions matching query (if any)
+                        val manuSuggestions = remember(manufacturerQuery, GrowDataStore.recentManufacturers, GrowDataStore.rememberSearchEnabled) {
+                            if (!GrowDataStore.rememberSearchEnabled) emptyList() else {
+                                val q = manufacturerQuery.trim()
+                                val pool = GrowDataStore.recentManufacturers.filter { it != customManufacturerLabel }
+                                if (q.isBlank()) pool.take(5) else pool.filter { it.startsWith(q, ignoreCase = true) }.take(5)
+                            }
+                        }
+                        if (manuSuggestions.isNotEmpty()) {
+                            HorizontalDivider()
+                            manuSuggestions.forEach { sugg ->
+                                DropdownMenuItem(
+                                    leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) },
+                                    text = { Text(sugg) },
+                                    onClick = {
+                                        manufacturer = sugg
+                                        manufacturerExpanded = false
+                                        strain = ""
+                                        manufacturerQuery = ""
+                                    }
+                                )
+                            }
+                        }
                         HorizontalDivider()
                         // Scrollable list of manufacturers (safer inside DropdownMenu)
                         val manuList = filteredManufacturers
@@ -305,6 +328,10 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                                         } else {
                                             // Keep strains closed; user opens manually
                                             strainExpanded = false
+                                            // persist to recents
+                                            if (GrowDataStore.rememberSearchEnabled) {
+                                                GrowDataStore.addRecentManufacturer(manu)
+                                            }
                                         }
                                     }
                                 )
@@ -348,6 +375,39 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                                     .fillMaxWidth()
                                     .padding(horizontal = 8.dp, vertical = 4.dp)
                             )
+                            // Show recent strain suggestions (across manufacturers) matching query
+                            val strainSuggestions = remember(strainQuery, GrowDataStore.recentStrains, GrowDataStore.rememberSearchEnabled) {
+                                if (!GrowDataStore.rememberSearchEnabled) emptyList() else {
+                                    val q = strainQuery.trim()
+                                    val pool = GrowDataStore.recentStrains
+                                    val list = if (q.isBlank()) pool else pool.filter { it.strain.startsWith(q, ignoreCase = true) }
+                                    list.take(6)
+                                }
+                            }
+                            if (strainSuggestions.isNotEmpty()) {
+                                HorizontalDivider()
+                                strainSuggestions.forEach { rs ->
+                                    DropdownMenuItem(
+                                        leadingIcon = { Icon(Icons.Filled.History, contentDescription = null) },
+                                        text = { Text("${rs.strain} — ${rs.manufacturer}") },
+                                        onClick = {
+                                            // Apply manufacturer and strain from suggestion
+                                            manufacturer = rs.manufacturer
+                                            strain = rs.strain
+                                            manufacturerExpanded = false
+                                            strainExpanded = false
+                                            // backfill THC/CBD/type if known
+                                            val selectedManu = StrainRepository.manufacturers.find { it.name.equals(rs.manufacturer, ignoreCase = true) }
+                                            val selectedStrain = selectedManu?.strains?.find { it.name.equals(rs.strain, ignoreCase = true) }
+                                            if (selectedStrain != null) {
+                                                thc = selectedStrain.thcContent
+                                                cbd = selectedStrain.cbdContent
+                                                plantType = selectedStrain.type
+                                            }
+                                        }
+                                    )
+                                }
+                            }
                             HorizontalDivider()
                             val filteredStrains = remember(strainQuery, strains) {
                                 val q = strainQuery.trim()
@@ -370,6 +430,11 @@ private fun AddPlantDialog(onCancel: () -> Unit, onAdd: (Int, Plant) -> Unit) {
                                             cbd = strainData.cbdContent
                                             plantType = strainData.type
                                             strainQuery = ""
+                                            // persist to recents (pair)
+                                            if (manufacturer.isNotBlank() && GrowDataStore.rememberSearchEnabled) {
+                                                GrowDataStore.addRecentStrain(manufacturer, strainData.name)
+                                                GrowDataStore.addRecentManufacturer(manufacturer)
+                                            }
                                         }
                                     )
                                 }
