@@ -67,14 +67,8 @@ jobs:
 
           # If this sdkmanager is too old (XML v3), re-bootstrap a newer one and retry once
           set +e
-          "$SDKMANAGER" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >/dev/null 2>&1 <<'EOF'
-          y
-          y
-          y
-          y
-          y
-          y
-          EOF
+          # Accept licenses non-interactively without here-doc to avoid YAML indentation issues
+          printf 'y\ny\ny\ny\ny\ny\n' | "$SDKMANAGER" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >/dev/null 2>&1
           LIC_STATUS=$?
           set -e
           if [ $LIC_STATUS -ne 0 ]; then
@@ -87,14 +81,7 @@ jobs:
             SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/16.0/bin/sdkmanager"
             echo "Retrying licenses with: $SDKMANAGER"
             set +e
-            "$SDKMANAGER" --sdk_root="${ANDROID_SDK_ROOT}" --licenses <<'EOF'
-            y
-            y
-            y
-            y
-            y
-            y
-            EOF
+            printf 'y\ny\ny\ny\ny\ny\n' | "$SDKMANAGER" --sdk_root="${ANDROID_SDK_ROOT}" --licenses >/dev/null 2>&1
             set -e
           fi
 
