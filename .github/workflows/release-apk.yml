@@ -35,34 +35,13 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
 
-      - name: Accept Android SDK licenses (non-interactive)
-        shell: bash
-        run: |
-          set -e
-          SDKMANAGER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(command -v sdkmanager || true)"
-          fi
-          if [ -z "$SDKMANAGER" ]; then
-            echo "Warning: sdkmanager not found; skipping license acceptance"
-          else
-            yes | "$SDKMANAGER" --licenses || true
-          fi
-
-      - name: Install required Android SDK packages
-        shell: bash
-        run: |
-          set -e
-          SDKMANAGER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$(command -v sdkmanager || true)"
-          fi
-          if [ -z "$SDKMANAGER" ]; then
-            echo "Warning: sdkmanager not found; relying on default setup from setup-android action"
-          else
-            "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          fi
+      # setup-android installs requested packages and accepts licenses; no manual sdkmanager calls needed
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
