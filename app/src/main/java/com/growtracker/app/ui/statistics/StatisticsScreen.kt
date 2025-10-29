@@ -29,6 +29,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.growtracker.app.ui.language.LanguageManager
 import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.language.getString
@@ -459,7 +462,7 @@ private fun minutesOnSoFarToday(minuteOfDay: Int, start: Int, end: Int): Int {
 }
 
 @Composable
-private fun LiveIndicator(nowTick: Long) {
+internal fun LiveIndicator(nowTick: Long) {
     val on = ((nowTick / 1000L) % 2L) == 0L
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
@@ -467,9 +470,16 @@ private fun LiveIndicator(nowTick: Long) {
                 .size(10.dp)
                 .clip(RoundedCornerShape(50))
                 .background(if (on) Color.Red else Color.Red.copy(alpha = 0.25f))
+                .testTag("live_dot")
+                .semantics { contentDescription = if (on) "live_on" else "live_off" }
         )
         Spacer(Modifier.width(6.dp))
-        Text("LIVE", style = MaterialTheme.typography.labelSmall, color = if (on) Color.Red else MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f))
+        Text(
+            "LIVE",
+            modifier = Modifier.testTag("live_text"),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (on) Color.Red else MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
+        )
     }
 }
 

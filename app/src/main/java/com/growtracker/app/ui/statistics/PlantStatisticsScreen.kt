@@ -27,6 +27,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.growtracker.app.data.EntryType
 import com.growtracker.app.data.FertilizerEntry
 import com.growtracker.app.data.Plant
@@ -256,7 +259,7 @@ private fun rememberNowTicker(periodMs: Long = 1000L): Long {
 }
 
 @Composable
-private fun LiveIndicator(nowTick: Long) {
+internal fun LiveIndicator(nowTick: Long) {
     // Blink every second using the shared ticker
     val on = ((nowTick / 1000L) % 2L) == 0L
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -266,9 +269,16 @@ private fun LiveIndicator(nowTick: Long) {
                 .size(10.dp)
                 .clip(MaterialTheme.shapes.small)
                 .background(if (on) Color.Red else Color.Red.copy(alpha = 0.25f))
+                .testTag("live_dot")
+                .semantics { contentDescription = if (on) "live_on" else "live_off" }
         )
         Spacer(Modifier.width(6.dp))
-        Text("LIVE", style = MaterialTheme.typography.labelSmall, color = if (on) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "LIVE",
+            modifier = Modifier.testTag("live_text"),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (on) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

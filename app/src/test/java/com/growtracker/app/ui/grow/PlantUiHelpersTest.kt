@@ -8,6 +8,13 @@ import org.junit.Test
 class PlantUiHelpersTest {
 
     @Test
+    fun dailyLightMinutes_handlesNormalAndCrossMidnight() {
+        assertEquals(60, dailyLightMinutes(0, 60))        // 00:00 - 01:00
+        assertEquals(60, dailyLightMinutes(23*60, 60))    // 23:00 - 01:00 (cross midnight)
+        assertEquals(18*60, dailyLightMinutes(6*60, 0))   // 06:00 -> 00:00 next day = 18h
+    }
+
+    @Test
     fun expectedBloomDays_byType() {
         assertEquals(70, expectedBloomDays(Plant(type = PlantType.AUTOFLOWER)))
         assertEquals(63, expectedBloomDays(Plant(type = PlantType.FEMINIZED_SATIVA)))
@@ -53,5 +60,29 @@ class PlantUiHelpersTest {
         val start = System.currentTimeMillis() - 14L * 24 * 60 * 60 * 1000 // exactly 14 days => Woche 3
         val plant = Plant(germinationDate = start)
         assertEquals("Woche 3", deriveAgeWeeks(plant))
+    }
+
+    @Test
+    fun computeElectricityCostsForPlant_returnsNullWhenMissingInputs() {
+        val p = Plant()
+        assertNull(computeElectricityCostsForPlant(p))
+    }
+
+    @Test
+    fun computeElectricityCostsForPlant_calculatesExpectedCosts() {
+        val plant = Plant(
+            lightWatt = 200,
+            lightPowerPercent = 50, // 100W effective
+            electricityPrice = 0.30,
+            lightOnStartMinutes = 6 * 60,
+            lightOnEndMinutes = 0 // 06:00 -> 00:00 next day
+        )
+        val costs = computeElectricityCostsForPlant(plant)!!
+        // daily kWh = 100W * 18h / 1000 = 1.8; daily cost = 0.54
+        val daily = 1.8 * 0.3
+        assertEquals(daily, costs.dailyCost, 1e-6)
+        assertEquals(daily * 7.0, costs.weeklyCost, 1e-6)
+        assertEquals(daily * 30.0, costs.monthlyCost, 1e-6)
+        assertEquals(daily * 365.0, costs.yearlyCost, 1e-6)
     }
 }
