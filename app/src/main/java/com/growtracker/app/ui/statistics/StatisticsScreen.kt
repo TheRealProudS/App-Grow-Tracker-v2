@@ -446,20 +446,7 @@ private fun deviceSecondsSoFar(dev: PowerDevice, secondOfDay: Int): Int {
     }
 }
 
-private fun minutesOnSoFarToday(minuteOfDay: Int, start: Int, end: Int): Int {
-    return if (end >= start) {
-        when {
-            minuteOfDay <= start -> 0
-            minuteOfDay >= end -> end - start
-            else -> minuteOfDay - start
-        }
-    } else { // crosses midnight
-        // On-window = [start..1440) U [0..end)
-        val part1 = if (minuteOfDay >= start) minuteOfDay - start else 0
-        val part2 = if (minuteOfDay <= end) minuteOfDay else end
-        part1 + part2
-    }
-}
+// Note: minutesOnSoFarToday was unused; removed for clarity.
 
 @Composable
 internal fun LiveIndicator(nowTick: Long) {

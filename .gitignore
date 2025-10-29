@@ -49,6 +49,12 @@ proguard/
 # Log Files
 *.log
 
+# Specific build output traces (should not be tracked)
+app_assemble_output.txt
+app_compile_kotlin_output.txt
+app_compile_output.txt
+build_failure_log.txt
+
 # Android Studio Navigation editor temp files
 .navigation/
 
