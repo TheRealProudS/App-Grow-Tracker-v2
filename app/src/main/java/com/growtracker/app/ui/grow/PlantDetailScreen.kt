@@ -870,6 +870,7 @@ private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -
     var deviceEditorOpen by remember { mutableStateOf(false) }
     var editingDeviceIndex by remember { mutableStateOf<Int?>(null) }
     val ctx = LocalContext.current
+    var qrDialogOpen by remember { mutableStateOf(false) }
     fun formatHm(mins: Int?): String = mins?.let { String.format(Locale.getDefault(), "%02d:%02d", it / 60, it % 60) } ?: "--:--"
     fun pickTime(initial: Int?, onSet: (Int) -> Unit) {
         val initH = (initial ?: 18 * 60) / 60
@@ -929,6 +930,19 @@ private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -
             )
 
             // Removed plant-level lamp watt/percent/time. Use devices below instead.
+            }
+            // QR Label section
+            item {
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                Text("QR-Label", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text("Erzeuge einen QR-Code, der diese Pflanze in der App öffnet (offline).", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(6.dp))
+                OutlinedButton(onClick = { qrDialogOpen = true }) {
+                    Icon(Icons.Filled.QrCode, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("QR-Code anzeigen & speichern")
+                }
             }
             // Devices section
             item {
@@ -1093,6 +1107,46 @@ private fun PlantSettingsDialog(plant: Plant, selectedDate: Long?, onClose: () -
         editingDeviceIndex = editingDeviceIndex,
         devicesState = devicesState,
         onClose = { deviceEditorOpen = false; editingDeviceIndex = null }
+    )
+
+    if (qrDialogOpen) {
+        PlantQrDialog(plantId = plant.id, onDismiss = { qrDialogOpen = false })
+    }
+}
+
+@Composable
+private fun PlantQrDialog(plantId: String, onDismiss: () -> Unit) {
+    val ctx = LocalContext.current
+    val payload = remember(plantId) { com.growtracker.app.util.QrUtils.buildPlantQrPayload(plantId, ctx.packageName) }
+    val qrBitmap = remember(payload) { com.growtracker.app.util.QrUtils.generateQrBitmap(payload, sizePx = 1024) }
+    val imageBitmap = remember(qrBitmap) { androidx.compose.ui.graphics.asImageBitmap(qrBitmap) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("QR-Code für Pflanze") },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                androidx.compose.foundation.Image(
+                    bitmap = imageBitmap,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                Text("Scannen öffnet die App und die Pflanze. Ohne App führt der Link zu Discord.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val fileName = "plant_${plantId}_qr.png"
+                com.growtracker.app.util.QrUtils.saveBitmapToDownloads(ctx, qrBitmap, fileName)
+                onDismiss()
+            }) { Text("Speichern") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Schließen") }
+        }
     )
 }
 

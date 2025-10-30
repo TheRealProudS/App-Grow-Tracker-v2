@@ -153,6 +153,9 @@ dependencies {
     // TensorFlow Lite (base) – GPU / Support / Metadata can be added later
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     
+    // QR Code generation
+    implementation("com.google.zxing:core:3.5.3")
+
     // Networking & Serialization
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")

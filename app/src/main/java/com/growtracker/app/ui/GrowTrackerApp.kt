@@ -60,7 +60,8 @@ import com.growtracker.app.R
 fun GrowTrackerApp(
     modifier: Modifier = Modifier,
     themeManager: ThemeManager,
-    languageManager: LanguageManager
+    languageManager: LanguageManager,
+    initialDeepLinkPlantId: String? = null
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
@@ -226,6 +227,14 @@ fun GrowTrackerApp(
                     languageManager = languageManager
                 )
             }
+        }
+    }
+
+    // Navigate to plant screen if launched via deep link
+    LaunchedEffect(initialDeepLinkPlantId) {
+        val target = initialDeepLinkPlantId
+        if (!target.isNullOrBlank()) {
+            navController.navigate("grow/plant/$target")
         }
     }
 }

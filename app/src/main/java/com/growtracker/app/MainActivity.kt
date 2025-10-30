@@ -1,5 +1,6 @@
 package com.growtracker.app
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
 import androidx.activity.ComponentActivity
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
         
         super.onCreate(savedInstanceState)
+        val initialPlantId = extractPlantIdFromIntent(intent)
         // Initialize Firebase if available (no-op if google-services.json is missing).
         // If not configured by google-services.json, try programmatic initialization using BuildConfig values.
         try {
@@ -82,10 +84,19 @@ class MainActivity : ComponentActivity() {
             false // Can be controlled by app state
         }
         
-        initializeApp()
+        initializeApp(initialPlantId)
     }
-    
-    private fun initializeApp() {
+
+    private fun extractPlantIdFromIntent(intent: android.content.Intent?): String? {
+        val data: Uri = intent?.data ?: return null
+        if (data.scheme == "growtracker" && data.host == "p") {
+            val segments = data.pathSegments
+            if (segments.isNotEmpty()) return segments.last()
+        }
+        return null
+    }
+
+    private fun initializeApp(initialPlantId: String?) {
         setContent {
             val themeManager = remember { ThemeManager() }
             val languageManager = remember { LanguageManager() }
@@ -96,7 +107,8 @@ class MainActivity : ComponentActivity() {
                         GrowTrackerApp(
                             modifier = Modifier.padding(innerPadding),
                             themeManager = themeManager,
-                            languageManager = languageManager
+                            languageManager = languageManager,
+                            initialDeepLinkPlantId = initialPlantId
                         )
                     }
                 }
