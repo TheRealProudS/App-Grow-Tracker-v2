@@ -184,41 +184,84 @@ fun SettingsScreen(
                 )
             }
 
-            // Social / Support row (centered Discord icon)
+            // Social / Support row (Discord, TikTok, Instagram)
             item {
                 val ctx = LocalContext.current
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        IconButton(onClick = {
-                            val webInvite = "https://discord.gg/yE2Es4gsUb"
-                            // First try to open the Discord app via package name (deep link). If not installed, fall back to browser.
-                            val discordIntent = ctx.packageManager.getLaunchIntentForPackage("com.discord")
-                            try {
-                                if (discordIntent != null) {
-                                    // Attempt to open app; if it accepts VIEW intents you could also use a deep link
-                                    ctx.startActivity(discordIntent)
-                                } else {
-                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(webInvite))
-                                    ctx.startActivity(browserIntent)
-                                }
-                            } catch (e: Exception) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // Discord
+                            IconButton(onClick = {
+                                val webInvite = "https://discord.gg/yE2Es4gsUb"
+                                val discordIntent = ctx.packageManager.getLaunchIntentForPackage("com.discord")
                                 try {
-                                    val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(webInvite))
-                                    ctx.startActivity(fallback)
-                                } catch (ex: Exception) {
+                                    if (discordIntent != null) {
+                                        ctx.startActivity(discordIntent)
+                                    } else {
+                                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(webInvite))
+                                        ctx.startActivity(browserIntent)
+                                    }
+                                } catch (e: Exception) {
+                                    try {
+                                        val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(webInvite))
+                                        ctx.startActivity(fallback)
+                                    } catch (ex: Exception) {
+                                        Toast.makeText(ctx, resolveString(Strings.error_cannot_open_link, languageManager.currentLanguage), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }, modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color.Transparent)) {
+                                Icon(
+                                    painter = androidx.compose.ui.res.painterResource(id = com.growtracker.app.R.drawable.ic_discord),
+                                    contentDescription = "Discord",
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            }
+
+                            // TikTok (opens profile in browser)
+                            IconButton(onClick = {
+                                val url = "https://www.tiktok.com/@growtracker"
+                                try {
+                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    ctx.startActivity(browserIntent)
+                                } catch (e: Exception) {
                                     Toast.makeText(ctx, resolveString(Strings.error_cannot_open_link, languageManager.currentLanguage), Toast.LENGTH_SHORT).show()
                                 }
+                            }, modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color.Transparent)) {
+                                Icon(
+                                    imageVector = Icons.Filled.MusicNote,
+                                    contentDescription = "TikTok",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(28.dp)
+                                )
                             }
-                        }, modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(Color.Transparent)) {
-                            Icon(
-                                painter = androidx.compose.ui.res.painterResource(id = com.growtracker.app.R.drawable.ic_discord),
-                                contentDescription = "Discord",
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(36.dp)
-                            )
+
+                            // Instagram (opens profile in browser)
+                            IconButton(onClick = {
+                                val url = "https://www.instagram.com/grow.tracker"
+                                try {
+                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    ctx.startActivity(browserIntent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(ctx, resolveString(Strings.error_cannot_open_link, languageManager.currentLanguage), Toast.LENGTH_SHORT).show()
+                                }
+                            }, modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color.Transparent)) {
+                                Icon(
+                                    imageVector = Icons.Filled.CameraAlt,
+                                    contentDescription = "Instagram",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(getString(Strings.discord_join, languageManager), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
