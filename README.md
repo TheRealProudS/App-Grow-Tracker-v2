@@ -63,7 +63,7 @@ Ein moderner, komplett offline nutzbarer Grow-Manager für Android (Jetpack Comp
 
 ## Lizenz
 
-Copyright 2025 TheRealProudS
+Copyright 2025 TheRealProudS - Grow-Tracker
 
 Lizenziert unter der Apache License, Version 2.0 (Apache-2.0). Siehe die Datei `LICENSE` für den vollständigen Lizenztext.
 
