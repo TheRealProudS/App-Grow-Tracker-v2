@@ -449,7 +449,7 @@ private fun deviceSecondsSoFar(dev: PowerDevice, secondOfDay: Int): Int {
 // Note: minutesOnSoFarToday was unused; removed for clarity.
 
 @Composable
-internal fun LiveIndicator(nowTick: Long) {
+private fun LiveIndicator(nowTick: Long) {
     val on = ((nowTick / 1000L) % 2L) == 0L
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(

@@ -1119,7 +1119,7 @@ private fun PlantQrDialog(plantId: String, onDismiss: () -> Unit) {
     val ctx = LocalContext.current
     val payload = remember(plantId) { com.growtracker.app.util.QrUtils.buildPlantQrPayload(plantId, ctx.packageName) }
     val qrBitmap = remember(payload) { com.growtracker.app.util.QrUtils.generateQrBitmap(payload, sizePx = 1024) }
-    val imageBitmap = remember(qrBitmap) { androidx.compose.ui.graphics.asImageBitmap(qrBitmap) }
+    val imageBitmap = remember(qrBitmap) { qrBitmap.asImageBitmap() }
 
     AlertDialog(
         onDismissRequest = onDismiss,

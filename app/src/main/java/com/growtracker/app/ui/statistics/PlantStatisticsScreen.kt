@@ -259,7 +259,7 @@ private fun rememberNowTicker(periodMs: Long = 1000L): Long {
 }
 
 @Composable
-internal fun LiveIndicator(nowTick: Long) {
+private fun LiveIndicator(nowTick: Long) {
     // Blink every second using the shared ticker
     val on = ((nowTick / 1000L) % 2L) == 0L
     Row(verticalAlignment = Alignment.CenterVertically) {
