@@ -87,8 +87,8 @@ fun SettingsScreen(
                     )
                 }
             }
-            
-            // Design & Display - Samsung Style
+            // Abschnitt: Darstellung & Sprache
+            item { SectionHeader("Darstellung & Sprache") }
             item {
                 SamsungSettingsItem(
                     title = getString(Strings.settings_dark_mode, languageManager),
@@ -99,8 +99,6 @@ fun SettingsScreen(
                     onSwitchChange = { themeManager.setDarkMode(it) }
                 )
             }
-
-            // Notifications - Samsung Style
             item {
                 SamsungSettingsItem(
                     title = getString(Strings.settings_push_notifications, languageManager),
@@ -111,8 +109,6 @@ fun SettingsScreen(
                     onSwitchChange = { notificationsEnabled = it }
                 )
             }
-
-            // Language - Samsung Style
             item {
                 SamsungSettingsItem(
                     title = getString(Strings.settings_language, languageManager),
@@ -122,7 +118,9 @@ fun SettingsScreen(
                 )
             }
 
-            // Search memory toggle
+            // Abschnitt: Sicherheit & Datenschutz
+            item { SectionHeader("Sicherheit & Datenschutz") }
+            // Suchverlauf merken
             item {
                 SamsungSettingsItem(
                     title = getString(Strings.settings_search_memory, languageManager),
@@ -133,8 +131,7 @@ fun SettingsScreen(
                     onSwitchChange = { enabled -> GrowDataStore.setRememberSearchEnabled(enabled) }
                 )
             }
-
-            // Clear search history action
+            // Suchverlauf löschen
             item {
                 val ctx = LocalContext.current
                 SamsungSettingsItem(
@@ -147,8 +144,7 @@ fun SettingsScreen(
                     }
                 )
             }
-
-            // Data Upload Consent - Samsung Style
+            // Datenupload-Einwilligung
             item {
                 SamsungSettingsItem(
                     title = getString(Strings.data_upload_title, languageManager),
@@ -163,18 +159,65 @@ fun SettingsScreen(
                     }
                 )
             }
-
-            // Divider
+            // App-Sperre
             item {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
+                val ctx = LocalContext.current
+                var lockEnabled by remember { mutableStateOf(com.growtracker.app.security.AppLockManager.isLockEnabled(ctx)) }
+                SamsungSettingsItem(
+                    title = "App-Sperre",
+                    subtitle = if (lockEnabled) "Aktiv" else "Deaktiviert",
+                    icon = Icons.Filled.Lock,
+                    isSwitch = true,
+                    switchChecked = lockEnabled,
+                    onSwitchChange = { enabled ->
+                        com.growtracker.app.security.AppLockManager.setLockEnabled(ctx, enabled)
+                        lockEnabled = enabled
+                        if (!enabled) {
+                            com.growtracker.app.security.AppLockManager.unlock()
+                        }
+                    }
+                )
+            }
+            // PIN festlegen/ändern
+            item {
+                val ctx = LocalContext.current
+                var showPinDialog by remember { mutableStateOf(false) }
+                val lockEnabled = com.growtracker.app.security.AppLockManager.isLockEnabled(ctx)
+                SamsungSettingsItem(
+                    title = "PIN festlegen/ändern",
+                    subtitle = if (lockEnabled) "Ändere oder setze einen PIN (genau 4 Ziffern)" else "Aktiviere zuerst die App-Sperre",
+                    icon = Icons.Filled.Password,
+                    onClick = { if (lockEnabled) showPinDialog = true }
+                )
+                if (showPinDialog) {
+                    PinDialog(onDismiss = { showPinDialog = false }, onSave = { pin ->
+                        com.growtracker.app.security.AppLockManager.setPin(ctx, pin)
+                        showPinDialog = false
+                    })
+                }
+            }
+            // Biometrie
+            item {
+                val ctx = LocalContext.current
+                var biometricEnabled by remember { mutableStateOf(com.growtracker.app.security.AppLockManager.isBiometricEnabled(ctx)) }
+                val canUseBio = remember { com.growtracker.app.security.AppLockManager.canUseBiometric(ctx) }
+                SamsungSettingsItem(
+                    title = "Biometrie verwenden",
+                    subtitle = if (canUseBio) (if (biometricEnabled) "Aktiv" else "Deaktiviert") else "Nicht verfügbar",
+                    icon = Icons.Filled.Fingerprint,
+                    isSwitch = true,
+                    switchChecked = biometricEnabled,
+                    onSwitchChange = { enabled ->
+                        if (canUseBio) {
+                            com.growtracker.app.security.AppLockManager.setBiometricEnabled(ctx, enabled)
+                            biometricEnabled = enabled
+                        }
+                    }
                 )
             }
 
-                    // Growbox / Plant related settings removed from navigator settings per request
-
-            // System Information - Samsung Style
+            // Abschnitt: System
+            item { SectionHeader("System") }
             item {
                 SamsungSettingsItem(
                     title = getString(Strings.settings_system_info, languageManager),
@@ -184,7 +227,8 @@ fun SettingsScreen(
                 )
             }
 
-            // Social / Support row (Discord, TikTok, Instagram)
+            // Abschnitt: Community
+            item { SectionHeader("Community") }
             item {
                 val ctx = LocalContext.current
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
@@ -235,10 +279,10 @@ fun SettingsScreen(
                                 .clip(CircleShape)
                                 .background(Color.Transparent)) {
                                 Icon(
-                                    imageVector = Icons.Filled.MusicNote,
+                                    painter = androidx.compose.ui.res.painterResource(id = com.growtracker.app.R.drawable.ic_tiktok),
                                     contentDescription = "TikTok",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(28.dp)
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(36.dp)
                                 )
                             }
 
@@ -256,15 +300,15 @@ fun SettingsScreen(
                                 .clip(CircleShape)
                                 .background(Color.Transparent)) {
                                 Icon(
-                                    imageVector = Icons.Filled.CameraAlt,
+                                    painter = androidx.compose.ui.res.painterResource(id = com.growtracker.app.R.drawable.ic_instagram),
                                     contentDescription = "Instagram",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(28.dp)
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(36.dp)
                                 )
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(getString(Strings.discord_join, languageManager), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Tritt unseren Socials bei", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -291,6 +335,19 @@ fun SettingsScreen(
             languageManager = languageManager
         )
     }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, start = 4.dp, bottom = 4.dp)
+    )
 }
 
 @Composable

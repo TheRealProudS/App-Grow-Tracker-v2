@@ -1,0 +1,25 @@
+#!/bin/sh
+# Grow-Tracker safeguard: block pushes until you explicitly allow them.
+# How to allow a single push:
+#   1) Create a file named ALLOW_PUSH in the repo root (echo > ALLOW_PUSH)
+#   2) Run your push; this hook will remove ALLOW_PUSH and allow the push.
+# Alternative: `git push --no-verify` to bypass hooks (not recommended).
+
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+  echo "[pre-push] Cannot determine repo root; blocking push." >&2
+  exit 1
+fi
+
+if [ -f "$REPO_ROOT/ALLOW_PUSH" ]; then
+  echo "[pre-push] ALLOW_PUSH file found. Allowing this push and removing the flag."
+  rm -f "$REPO_ROOT/ALLOW_PUSH"
+  exit 0
+fi
+
+echo "\n[pre-push] Push blocked by policy. Test first, then enable push:" >&2
+echo "  • Create ALLOW_PUSH file in repo root (Windows PowerShell):" >&2
+echo "      New-Item -ItemType File -Path .\\ALLOW_PUSH -Force | Out-Null" >&2
+echo "  • Or bypass once (not recommended): git push --no-verify" >&2
+echo "" >&2
+exit 1

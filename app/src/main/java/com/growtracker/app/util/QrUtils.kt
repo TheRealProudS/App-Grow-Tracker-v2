@@ -23,6 +23,13 @@ object QrUtils {
      * intent://p/PLNT-123#Intent;scheme=growtracker;package=com.growtracker.app;S.browser_fallback_url=https://discord.gg/...;end
      */
     fun buildPlantQrPayload(plantId: String, packageName: String): String {
+        // Use pure custom scheme for maximum offline compatibility across scanners
+        val safeId = plantId.trim()
+        return "growtracker://p/$safeId"
+    }
+
+    /** Optional: Intent URI variant with online Discord fallback (for scanners that expect intent://). */
+    fun buildPlantQrPayloadWithIntentFallback(plantId: String, packageName: String): String {
         val safeId = plantId.trim()
         return "intent://p/$safeId#Intent;scheme=growtracker;package=$packageName;S.browser_fallback_url=$DISCORD_FALLBACK;end"
     }

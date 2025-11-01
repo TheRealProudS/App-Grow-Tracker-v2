@@ -1,10 +1,13 @@
 package com.growtracker.app
 
 import android.app.Application
+import com.growtracker.app.util.CrashLogger
 
 class GrowTrackerApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        // Install a global crash handler to capture any early-startup crashes to a file.
+        runCatching { CrashLogger.install(this) }
         instance = this
     }
 

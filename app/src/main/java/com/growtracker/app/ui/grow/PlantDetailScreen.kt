@@ -1134,7 +1134,7 @@ private fun PlantQrDialog(plantId: String, onDismiss: () -> Unit) {
                         .height(240.dp)
                 )
                 Spacer(Modifier.height(8.dp))
-                Text("Scannen öffnet die App und die Pflanze. Ohne App führt der Link zu Discord.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Offline-QR: Öffnet direkt die App (wenn installiert) und die Pflanze.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = {

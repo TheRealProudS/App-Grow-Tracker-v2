@@ -228,6 +228,23 @@ object GrowDataStore {
 			scope.launch {
 				val jsonStr = json.encodeToString(snapshot)
 				appContext.growDataStore.edit { prefs: MutablePreferences -> prefs[PLANTS_KEY] = jsonStr }
+				// Also purge from legacy GrowDataManager growboxes to avoid ghosts in statistics
+				try {
+					val mgr = com.growtracker.app.data.GrowDataManager(appContext)
+					val boxes = mgr.loadGrowboxes()
+					if (boxes.isNotEmpty()) {
+						val updated = boxes.map { gb ->
+							val cleanedPlants = gb.plants.filterNot { it.id == plantId }
+							if (cleanedPlants.size != gb.plants.size) gb.copy(plants = cleanedPlants) else gb
+						}
+						// Only write back if any change occurred
+						if (updated != boxes) {
+							mgr.saveGrowboxes(updated)
+						}
+					}
+				} catch (_: Exception) {
+					// Best-effort cleanup; ignore failures
+				}
 			}
 		}
 	}

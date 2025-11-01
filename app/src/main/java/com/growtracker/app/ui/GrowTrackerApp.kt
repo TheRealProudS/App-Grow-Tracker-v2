@@ -54,6 +54,9 @@ import com.growtracker.app.ui.language.Strings
 import com.growtracker.app.ui.language.getString
 import com.growtracker.app.ui.fermentation.FermentationScreen
 import com.growtracker.app.R
+import kotlinx.coroutines.flow.collectLatest
+import com.growtracker.app.security.AppLockManager
+import com.growtracker.app.ui.security.LockScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -230,11 +233,26 @@ fun GrowTrackerApp(
         }
     }
 
+    // Overlay lock screen when locked
+    val locked by AppLockManager.locked.collectAsState()
+    if (locked) {
+        LockScreen(onUnlocked = { /* no-op; overlay hides on flow change */ })
+    }
+
     // Navigate to plant screen if launched via deep link
     LaunchedEffect(initialDeepLinkPlantId) {
         val target = initialDeepLinkPlantId
         if (!target.isNullOrBlank()) {
             navController.navigate("grow/plant/$target")
+        }
+    }
+
+    // Also handle deep links delivered while app is running
+    LaunchedEffect(Unit) {
+        com.growtracker.app.util.DeepLinkBus.plantIds.collectLatest { id ->
+            if (id.isNotBlank()) {
+                navController.navigate("grow/plant/$id")
+            }
         }
     }
 }

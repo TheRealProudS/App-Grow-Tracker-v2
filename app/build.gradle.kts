@@ -142,6 +142,12 @@ dependencies {
     // Security Crypto (EncryptedFile / EncryptedSharedPreferences)
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
+    // Biometric authentication
+    implementation("androidx.biometric:biometric:1.1.0")
+
+    // Fragment (needed for BiometricPrompt with FragmentActivity)
+    implementation("androidx.fragment:fragment-ktx:1.8.4")
+
     // CameraX (explicit versions; BOM artifacts not resolving in current repo context)
     val cameraXVersion = "1.3.3"
     implementation("androidx.camera:camera-core:$cameraXVersion")

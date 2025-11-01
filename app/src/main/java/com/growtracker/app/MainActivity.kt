@@ -3,7 +3,7 @@ package com.growtracker.app
 import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,13 +23,13 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.FirebaseOptions
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Modern Splash Screen API
         val splashScreen = installSplashScreen()
         
         super.onCreate(savedInstanceState)
-        val initialPlantId = extractPlantIdFromIntent(intent)
+    val initialPlantId = extractPlantIdFromIntent(intent)
         // Initialize Firebase if available (no-op if google-services.json is missing).
         // If not configured by google-services.json, try programmatic initialization using BuildConfig values.
         try {
@@ -85,6 +85,21 @@ class MainActivity : ComponentActivity() {
         }
         
         initializeApp(initialPlantId)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        com.growtracker.app.security.AppLockManager.onForeground(this)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val id = extractPlantIdFromIntent(intent)
+        if (!id.isNullOrBlank()) {
+            // Emit to Compose layer for runtime navigation
+            com.growtracker.app.util.DeepLinkBus.emitPlantId(id)
+        }
     }
 
     private fun extractPlantIdFromIntent(intent: android.content.Intent?): String? {
